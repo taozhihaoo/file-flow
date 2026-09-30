@@ -1,0 +1,109 @@
+<UserControl x:Class="FileFlow.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24,18,24,24" MaxWidth="760" HorizontalAlignment="Left">
+
+            <!-- Scanning -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource H2}" Text="Scanning"/>
+                    <CheckBox Margin="0,12,0,0"
+                              Content="Include subfolders by default"
+                              IsChecked="{Binding ScanRecursive}"
+                              Style="{StaticResource AppCheckBox}"/>
+                    <CheckBox Margin="0,10,0,0"
+                              Content="Include hidden files by default"
+                              IsChecked="{Binding ScanIncludeHidden}"
+                              Style="{StaticResource AppCheckBox}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Operations -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource H2}" Text="Operations"/>
+                    <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Muted}" Text="Max concurrent operations"/>
+                        <Slider Width="220"
+                                Margin="14,0,10,0"
+                                VerticalAlignment="Center"
+                                IsSnapToTickEnabled="True"
+                                Maximum="16"
+                                Minimum="1"
+                                TickFrequency="1"
+                                Value="{Binding MaxConcurrentOperations}"/>
+                        <TextBlock VerticalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimary}"
+                                   Text="{Binding ConcurrentOperationsValue}"/>
+                    </StackPanel>
+                    <CheckBox Margin="0,12,0,0"
+                              Content="Always ask for confirmation before destructive operations"
+                              IsChecked="{Binding ConfirmDestructiveOperations}"
+                              Style="{StaticResource AppCheckBox}"/>
+                    <CheckBox Margin="0,10,0,0"
+                              Content="Send deleted files to the Recycle Bin (off = permanent deletion)"
+                              IsChecked="{Binding DeleteToRecycleBin}"
+                              Style="{StaticResource AppCheckBox}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Import / Export -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource H2}" Text="Import &amp; Export"/>
+                    <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
+                        <TextBox Width="420"
+                                 Style="{StaticResource AppTextBox}"
+                                 Tag="Default folder for CSV exports"
+                                 Text="{Binding ExportDirectory, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Margin="8,0,0,0"
+                                Command="{Binding BrowseExportDirectoryCommand}"
+                                Content="Browse..."
+                                Style="{StaticResource AppButton}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Logging -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource H2}" Text="Logging"/>
+                    <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Muted}" Text="Minimum file log level"/>
+                        <ComboBox Margin="14,0,0,0"
+                                  ItemsSource="{Binding LogLevelOptions}"
+                                  SelectedItem="{Binding LogLevel}"
+                                  Style="{StaticResource AppComboBox}"/>
+                    </StackPanel>
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Muted}" Text="{Binding LogsDirectoryText, StringFormat=Log folder: {0}}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Data locations -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource H2}" Text="Data locations"/>
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Muted}" Text="{Binding DatabasePathText, StringFormat=Database: {0}}"/>
+                    <TextBlock Margin="0,6,0,0" Style="{StaticResource Muted}" Text="{Binding DataDirectoryText, StringFormat=Data folder: {0}}"/>
+                    <Button Margin="0,12,0,0"
+                            Command="{Binding OpenDataFolderCommand}"
+                            Content="Open data folder"
+                            HorizontalAlignment="Left"
+                            Style="{StaticResource AppButton}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Save / reset -->
+            <StackPanel Orientation="Horizontal">
+                <Button Command="{Binding SaveCommand}" Content="Save settings" MinWidth="130" Style="{StaticResource AccentButton}"/>
+                <Button Margin="10,0,0,0"
+                        Command="{Binding ResetToDefaultsCommand}"
+                        Content="Reset to defaults"
+                        MinWidth="130"
+                        Style="{StaticResource AppButton}"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

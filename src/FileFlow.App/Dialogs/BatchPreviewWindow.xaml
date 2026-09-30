@@ -1,0 +1,152 @@
+<Window x:Class="FileFlow.App.Dialogs.BatchPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title}"
+        Width="760"
+        Height="600"
+        MinWidth="620"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="{StaticResource WindowBackground}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0"
+                   Style="{StaticResource H2}"
+                   Text="{Binding Title}"/>
+        <TextBlock Grid.Row="1"
+                   Margin="0,4,0,0"
+                   Style="{StaticResource Muted}"
+                   Text="{Binding Description}"
+                   TextWrapping="Wrap"/>
+
+        <!-- Rename rules editor -->
+        <Border Grid.Row="2"
+                Margin="0,12,0,0"
+                Padding="12"
+                Background="{StaticResource SurfaceMuted}"
+                BorderBrush="{StaticResource SurfaceBorder}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Visibility="{Binding ShowRuleEditor, Converter={StaticResource BoolToVisibility}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.Resources>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Margin" Value="0,0,8,0"/>
+                    </Style>
+                </Grid.Resources>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Prefix"/>
+                <TextBox x:Name="PrefixBox" Grid.Row="0" Grid.Column="1" Margin="0,2,10,0" Style="{StaticResource AppTextBox}" Tag="e.g. 2026_" Text="{Binding Prefix, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="Suffix"/>
+                <TextBox Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="3" Margin="0,2,0,0" Style="{StaticResource AppTextBox}" Tag="e.g. _draft" Text="{Binding Suffix, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Find"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Margin="0,2,10,0" Style="{StaticResource AppTextBox}" Tag="text to replace" Text="{Binding FindText, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="Replace with"/>
+                <TextBox Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="3" Margin="0,2,0,0" Style="{StaticResource AppTextBox}" Text="{Binding ReplaceText, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,8,0,0" Content="Add sequential numbers" IsChecked="{Binding UseSequentialNumbers}" Style="{StaticResource AppCheckBox}"/>
+                <StackPanel Grid.Row="2" Grid.Column="3" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,6,0,0" IsEnabled="{Binding UseSequentialNumbers}">
+                    <TextBlock Text="Start at" Style="{StaticResource Muted}"/>
+                    <TextBox Width="60" Style="{StaticResource AppTextBox}" Text="{Binding SequentialStart, UpdateSourceTrigger=PropertyChanged}"/>
+                    <TextBlock Margin="10,0,8,0" Text="Digits" Style="{StaticResource Muted}"/>
+                    <TextBox Width="60" Style="{StaticResource AppTextBox}" Tag="3" Text="{Binding SequentialPadding, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Preview list -->
+        <Border Grid.Row="3"
+                Margin="0,12,0,0"
+                Background="{StaticResource Surface}"
+                BorderBrush="{StaticResource SurfaceBorder}"
+                BorderThickness="1"
+                CornerRadius="6">
+            <ListBox ItemsSource="{Binding Items}"
+                     BorderThickness="0"
+                     Background="Transparent"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     VirtualizingPanel.VirtualizationMode="Recycling">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="6,2" MinHeight="24">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Foreground="{StaticResource TextPrimary}"
+                                       Text="{Binding From}"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding From}"/>
+                            <TextBlock Grid.Column="1"
+                                       Margin="10,0"
+                                       FontFamily="{StaticResource IconFontFamily}"
+                                       Foreground="{StaticResource TextSecondary}"
+                                       Text="&#xE72A;"/>
+                            <TextBlock Grid.Column="2"
+                                       Foreground="{StaticResource TextPrimary}"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding To}"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding To}"/>
+                            <TextBlock Grid.Column="3"
+                                       Margin="10,0,0,0"
+                                       Foreground="{StaticResource Danger}"
+                                       Text="{Binding Error}"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="220"
+                                       Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- Warning -->
+        <Border Grid.Row="4"
+                Margin="0,10,0,0"
+                Padding="10,8"
+                Background="{StaticResource StatusRunningBackground}"
+                CornerRadius="6"
+                Visibility="{Binding Warning, Converter={StaticResource NullToVisibility}}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock FontFamily="{StaticResource IconFontFamily}" Foreground="{StaticResource Warning}" Text="&#xE7BA;" VerticalAlignment="Center"/>
+                <TextBlock Margin="8,0,0,0" Foreground="{StaticResource Warning}" Text="{Binding Warning}" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Summary + buttons -->
+        <StackPanel Grid.Row="5" Margin="0,12,0,0">
+            <TextBlock Foreground="{StaticResource TextSecondary}" Text="{Binding SummaryText}"/>
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,10,0,0">
+                <Button Content="Cancel" IsCancel="True" MinWidth="90" Style="{StaticResource AppButton}"/>
+                <Button Command="{Binding ConfirmCommand}" Content="{Binding ConfirmButtonText}" IsDefault="True" MinWidth="100" Margin="10,0,0,0" Style="{StaticResource AccentButton}"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>
