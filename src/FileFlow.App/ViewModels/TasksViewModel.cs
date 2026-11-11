@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FileFlow.App.Localization;
 using FileFlow.App.Services;
 using FileFlow.Core;
 using FileFlow.Core.Interfaces;
@@ -137,7 +138,11 @@ public partial class TasksViewModel : ObservableObject, IRefreshable
             return;
         }
 
-        if (task.Task.State is TaskState.Running && !_dialogs.Confirm("Cancel task", $"Cancel the running task \"{task.DescriptionText}\"?", "Items already processed keep their state; the remaining items are cancelled."))
+        if (task.Task.State is TaskState.Running
+            && !_dialogs.Confirm(
+                Loc.Instance["Tasks_CancelTitle"],
+                Loc.Instance.F("Tasks_CancelMessage", task.DescriptionText),
+                Loc.Instance["Tasks_CancelDetails"]))
         {
             return;
         }
@@ -150,7 +155,7 @@ public partial class TasksViewModel : ObservableObject, IRefreshable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Could not cancel task {TaskId}", task.Id);
-            _dialogs.ShowError("Cancel task", "Could not cancel the task: " + ex.Message);
+            _dialogs.ShowError(Loc.Instance["Tasks_CancelTitle"], Loc.Instance.F("Tasks_CancelError", ex.Message));
         }
     }
 
@@ -166,17 +171,17 @@ public partial class TasksViewModel : ObservableObject, IRefreshable
         try
         {
             var newTaskId = await _queue.RetryFailedItemsAsync(task.Id);
-            _dialogs.ShowInfo("Retry", $"Queued a new task #{newTaskId} with the failed items.");
+            _dialogs.ShowInfo(Loc.Instance["Tasks_RetryTitle"], Loc.Instance.F("Tasks_RetryQueued", newTaskId));
             await RefreshAsync();
         }
         catch (FileFlow.Core.FileFlowException ex)
         {
-            _dialogs.ShowError("Retry failed items", ex.Message);
+            _dialogs.ShowError(Loc.Instance["Tasks_RetryErrorTitle"], ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Could not retry task {TaskId}", task.Id);
-            _dialogs.ShowError("Retry failed items", "Unexpected error: " + ex.Message);
+            _dialogs.ShowError(Loc.Instance["Tasks_RetryErrorTitle"], Loc.Instance.F("Tasks_RetryUnexpected", ex.Message));
         }
     }
 
@@ -188,7 +193,10 @@ public partial class TasksViewModel : ObservableObject, IRefreshable
             return;
         }
 
-        if (!_dialogs.Confirm("Clear finished tasks", $"Remove {FinishedCount} finished task(s) from the list?", "The operation history is kept."))
+        if (!_dialogs.Confirm(
+                Loc.Instance["Tasks_ClearTitle"],
+                Loc.Instance.F("Tasks_ClearMessage", FinishedCount),
+                Loc.Instance["Tasks_ClearDetails"]))
         {
             return;
         }
@@ -201,7 +209,7 @@ public partial class TasksViewModel : ObservableObject, IRefreshable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Could not clear finished tasks");
-            _dialogs.ShowError("Clear finished", "Could not clear finished tasks: " + ex.Message);
+            _dialogs.ShowError(Loc.Instance["Tasks_ClearTitle"], Loc.Instance.F("Tasks_ClearError", ex.Message));
         }
     }
 }

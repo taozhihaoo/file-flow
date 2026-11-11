@@ -1,65 +1,95 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Base palette -->
-    <Color x:Key="WindowBackgroundColor">#F5F6F8</Color>
-    <SolidColorBrush x:Key="WindowBackground" Color="{StaticResource WindowBackgroundColor}"/>
+    <!-- ============================================================
+         FileFlow palette
+         Indigo accent on cool neutral surfaces, deep navy sidebar.
+         ============================================================ -->
 
+    <!-- Window / surfaces -->
+    <Color x:Key="WindowBackgroundColor">#F4F6FB</Color>
+    <SolidColorBrush x:Key="WindowBackground" Color="{StaticResource WindowBackgroundColor}"/>
     <SolidColorBrush x:Key="Surface" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="SurfaceBorder" Color="#E3E6EA"/>
-    <SolidColorBrush x:Key="SurfaceMuted" Color="#FAFBFC"/>
+    <SolidColorBrush x:Key="SurfaceAlt" Color="#F9FAFD"/>
+    <SolidColorBrush x:Key="SurfaceMuted" Color="#F2F4FA"/>
+    <SolidColorBrush x:Key="SurfaceBorder" Color="#E5E9F3"/>
+    <SolidColorBrush x:Key="SurfaceBorderStrong" Color="#D2D9E9"/>
 
     <!-- Sidebar -->
-    <SolidColorBrush x:Key="SidebarBackground" Color="#1F2937"/>
-    <SolidColorBrush x:Key="SidebarHover" Color="#374151"/>
-    <SolidColorBrush x:Key="SidebarSelected" Color="#2563EB"/>
-    <SolidColorBrush x:Key="SidebarText" Color="#D1D5DB"/>
-    <SolidColorBrush x:Key="SidebarTextMuted" Color="#9CA3AF"/>
+    <LinearGradientBrush x:Key="SidebarBackground" StartPoint="0,0" EndPoint="0.35,1">
+        <GradientStop Offset="0" Color="#18203A"/>
+        <GradientStop Offset="0.55" Color="#141B31"/>
+        <GradientStop Offset="1" Color="#0E1424"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="SidebarHover" Color="#223050"/>
+    <SolidColorBrush x:Key="SidebarSelected" Color="#2A3A61"/>
+    <SolidColorBrush x:Key="SidebarIndicator" Color="#8B93FF"/>
+    <SolidColorBrush x:Key="SidebarText" Color="#C8D2E6"/>
+    <SolidColorBrush x:Key="SidebarTextMuted" Color="#78859F"/>
+    <SolidColorBrush x:Key="SidebarDivider" Color="#25304A"/>
 
     <!-- Accent -->
-    <SolidColorBrush x:Key="Accent" Color="#2563EB"/>
-    <SolidColorBrush x:Key="AccentHover" Color="#1D4ED8"/>
-    <SolidColorBrush x:Key="AccentPressed" Color="#1E40AF"/>
-    <SolidColorBrush x:Key="AccentLight" Color="#DBEAFE"/>
+    <SolidColorBrush x:Key="Accent" Color="#4F46E5"/>
+    <SolidColorBrush x:Key="AccentHover" Color="#4338CA"/>
+    <SolidColorBrush x:Key="AccentPressed" Color="#3730A3"/>
+    <SolidColorBrush x:Key="AccentLight" Color="#EEF0FF"/>
+    <SolidColorBrush x:Key="AccentSoft" Color="#E4E7FF"/>
+    <SolidColorBrush x:Key="AccentText" Color="#FFFFFF"/>
+    <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#6366F1"/>
+        <GradientStop Offset="1" Color="#A855F7"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="AccentLineGradient" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Offset="0" Color="#6366F1"/>
+        <GradientStop Offset="1" Color="#22D3EE"/>
+    </LinearGradientBrush>
 
     <!-- Semantic -->
-    <SolidColorBrush x:Key="Danger" Color="#DC2626"/>
-    <SolidColorBrush x:Key="DangerHover" Color="#FEF2F2"/>
-    <SolidColorBrush x:Key="Success" Color="#15803D"/>
-    <SolidColorBrush x:Key="Warning" Color="#B45309"/>
+    <SolidColorBrush x:Key="Danger" Color="#D92D20"/>
+    <SolidColorBrush x:Key="DangerHover" Color="#FEF1F0"/>
+    <SolidColorBrush x:Key="DangerSoft" Color="#FEE4E2"/>
+    <SolidColorBrush x:Key="Success" Color="#0E9F6E"/>
+    <SolidColorBrush x:Key="SuccessSoft" Color="#E6F8F1"/>
+    <SolidColorBrush x:Key="Warning" Color="#B54708"/>
+    <SolidColorBrush x:Key="WarningSoft" Color="#FFF4E5"/>
+    <SolidColorBrush x:Key="Info" Color="#175CD3"/>
+    <SolidColorBrush x:Key="InfoSoft" Color="#EAF2FF"/>
 
     <!-- Text -->
-    <SolidColorBrush x:Key="TextPrimary" Color="#111827"/>
-    <SolidColorBrush x:Key="TextSecondary" Color="#6B7280"/>
-    <SolidColorBrush x:Key="TextDisabled" Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="TextPrimary" Color="#0F172A"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="#5A6478"/>
+    <SolidColorBrush x:Key="TextMuted" Color="#8A93A6"/>
+    <SolidColorBrush x:Key="TextDisabled" Color="#A6AEC0"/>
+    <SolidColorBrush x:Key="TextInverse" Color="#FFFFFF"/>
 
     <!-- Controls -->
     <SolidColorBrush x:Key="ControlBackground" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="ControlBorder" Color="#D1D5DB"/>
-    <SolidColorBrush x:Key="ControlBorderFocus" Color="#2563EB"/>
-    <SolidColorBrush x:Key="HoverBackground" Color="#F3F4F6"/>
-    <SolidColorBrush x:Key="PressedBackground" Color="#E5E7EB"/>
+    <SolidColorBrush x:Key="ControlBorder" Color="#DCE2EF"/>
+    <SolidColorBrush x:Key="ControlBorderStrong" Color="#C6CFE3"/>
+    <SolidColorBrush x:Key="ControlBorderFocus" Color="#6366F1"/>
+    <SolidColorBrush x:Key="HoverBackground" Color="#F4F6FC"/>
+    <SolidColorBrush x:Key="PressedBackground" Color="#EAEEF9"/>
 
-    <!-- Rows -->
-    <SolidColorBrush x:Key="RowHover" Color="#F3F4F6"/>
-    <SolidColorBrush x:Key="RowSelected" Color="#DBEAFE"/>
-    <SolidColorBrush x:Key="RowAlternate" Color="#FAFBFC"/>
-    <SolidColorBrush x:Key="GridLine" Color="#F1F2F4"/>
-    <SolidColorBrush x:Key="HeaderBackground" Color="#F9FAFB"/>
+    <!-- Rows / grid -->
+    <SolidColorBrush x:Key="RowHover" Color="#F4F6FC"/>
+    <SolidColorBrush x:Key="RowSelected" Color="#EAEDFF"/>
+    <SolidColorBrush x:Key="RowAlternate" Color="#FBFCFE"/>
+    <SolidColorBrush x:Key="GridLine" Color="#EEF1F8"/>
+    <SolidColorBrush x:Key="HeaderBackground" Color="#F7F9FD"/>
 
     <!-- Status pills: task states -->
-    <SolidColorBrush x:Key="StatusQueuedBackground" Color="#EFF6FF"/>
-    <SolidColorBrush x:Key="StatusQueuedText" Color="#1D4ED8"/>
-    <SolidColorBrush x:Key="StatusRunningBackground" Color="#FEF3C7"/>
-    <SolidColorBrush x:Key="StatusRunningText" Color="#B45309"/>
-    <SolidColorBrush x:Key="StatusCompletedBackground" Color="#DCFCE7"/>
-    <SolidColorBrush x:Key="StatusCompletedText" Color="#15803D"/>
-    <SolidColorBrush x:Key="StatusPartialBackground" Color="#FFEDD5"/>
+    <SolidColorBrush x:Key="StatusQueuedBackground" Color="#EAF2FF"/>
+    <SolidColorBrush x:Key="StatusQueuedText" Color="#175CD3"/>
+    <SolidColorBrush x:Key="StatusRunningBackground" Color="#FFF4E5"/>
+    <SolidColorBrush x:Key="StatusRunningText" Color="#B54708"/>
+    <SolidColorBrush x:Key="StatusCompletedBackground" Color="#E6F8F1"/>
+    <SolidColorBrush x:Key="StatusCompletedText" Color="#0E7C58"/>
+    <SolidColorBrush x:Key="StatusPartialBackground" Color="#FFEEE4"/>
     <SolidColorBrush x:Key="StatusPartialText" Color="#C2410C"/>
-    <SolidColorBrush x:Key="StatusFailedBackground" Color="#FEE2E2"/>
-    <SolidColorBrush x:Key="StatusFailedText" Color="#B91C1C"/>
-    <SolidColorBrush x:Key="StatusCancelledBackground" Color="#F3F4F6"/>
-    <SolidColorBrush x:Key="StatusCancelledText" Color="#6B7280"/>
-    <SolidColorBrush x:Key="StatusInterruptedBackground" Color="#F3E8FF"/>
-    <SolidColorBrush x:Key="StatusInterruptedText" Color="#7E22CE"/>
+    <SolidColorBrush x:Key="StatusFailedBackground" Color="#FEE4E2"/>
+    <SolidColorBrush x:Key="StatusFailedText" Color="#B42318"/>
+    <SolidColorBrush x:Key="StatusCancelledBackground" Color="#F2F4FA"/>
+    <SolidColorBrush x:Key="StatusCancelledText" Color="#5A6478"/>
+    <SolidColorBrush x:Key="StatusInterruptedBackground" Color="#F4EBFF"/>
+    <SolidColorBrush x:Key="StatusInterruptedText" Color="#7338B8"/>
 </ResourceDictionary>

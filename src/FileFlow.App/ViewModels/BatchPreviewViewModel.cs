@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FileFlow.App.Localization;
 using FileFlow.Core.Models;
 using FileFlow.Core.Planning;
 
@@ -26,7 +27,7 @@ public sealed class PreviewItemViewModel
 /// </summary>
 public partial class BatchPreviewViewModel : ObservableObject
 {
-    public string Title { get; init; } = "Preview";
+    public string Title { get; init; } = string.Empty;
 
     public string Description { get; init; } = string.Empty;
 
@@ -43,12 +44,11 @@ public partial class BatchPreviewViewModel : ObservableObject
 
     public int ValidCount => TotalCount - ErrorCount;
 
-    public string SummaryText =>
-        ErrorCount == 0
-            ? $"{ValidCount} file(s) will be processed."
-            : $"{ValidCount} of {TotalCount} file(s) can be processed. {ErrorCount} have problems and will be skipped.";
+    public string SummaryText => ErrorCount == 0
+        ? Loc.Instance.F("Preview_Summary", ValidCount)
+        : Loc.Instance.F("Preview_SummaryErrors", ValidCount, TotalCount, ErrorCount);
 
-    public string ConfirmButtonText { get; init; } = "Execute";
+    public string ConfirmButtonText { get; init; } = Loc.Instance["Preview_Execute"];
 
     public event Action<bool>? RequestClose;
 
@@ -92,7 +92,7 @@ public partial class RenamePreviewViewModel : BatchPreviewViewModel
     public RenamePreviewViewModel(RenameRules initialRules, Func<RenameRules, RenamePlan> replan)
     {
         ShowRuleEditor = true;
-        ConfirmButtonText = "Rename";
+        ConfirmButtonText = Loc.Instance["Op_Rename"];
         _replan = replan;
         Prefix = initialRules.Prefix;
         Suffix = initialRules.Suffix;

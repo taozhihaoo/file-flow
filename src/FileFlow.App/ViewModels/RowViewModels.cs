@@ -1,5 +1,5 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using FileFlow.App.Localization;
 using FileFlow.Core;
 using FileFlow.Core.Formatting;
 using FileFlow.Core.Models;
@@ -52,13 +52,13 @@ public partial class TaskRowViewModel : ObservableObject
 
     public long Id => Task.Id;
 
-    public string TypeText => TaskTypeNames.ToDisplay(Task.Type);
+    public string TypeText => DisplayNames.TaskTypeName(Task.Type);
 
     public string DescriptionText => string.IsNullOrWhiteSpace(Task.Description) ? TypeText : Task.Description;
 
-    public string StateText => TaskStateText(Task.State);
+    public string StateText => DisplayNames.TaskStateName(Task.State);
 
-    public string CountsText => $"{Task.Succeeded:N0} ok · {Task.Failed:N0} failed · {Task.Total:N0} total";
+    public string CountsText => Loc.Instance.F("Tasks_Counts", Task.Succeeded, Task.Failed, Task.Total);
 
     public double ProgressPercent => Task.Total == 0
         ? 0
@@ -86,17 +86,15 @@ public partial class TaskRowViewModel : ObservableObject
         OnPropertyChanged(nameof(CanRetry));
     }
 
-    public static string TaskStateText(TaskState state) => state switch
+    public static string TaskStateText(TaskState state) => DisplayNames.TaskStateName(state);
+
+    /// <summary>Re-reads every generated string after a language change.</summary>
+    public void RefreshLocalization()
     {
-        TaskState.Queued => "Queued",
-        TaskState.Running => "Running",
-        TaskState.Completed => "Completed",
-        TaskState.CompletedWithErrors => "Completed with errors",
-        TaskState.Failed => "Failed",
-        TaskState.Cancelled => "Cancelled",
-        TaskState.Interrupted => "Interrupted",
-        _ => state.ToString(),
-    };
+        OnPropertyChanged(nameof(TypeText));
+        OnPropertyChanged(nameof(DescriptionText));
+        RefreshState();
+    }
 }
 
 /// <summary>An item row of a selected task.</summary>
@@ -109,7 +107,7 @@ public sealed class TaskItemRowViewModel
 
     public TaskItemRecord Item { get; }
 
-    public string StateText => Item.State.ToString();
+    public string StateText => DisplayNames.ItemStateName(Item.State);
 
     public string SourcePath => Item.SourcePath;
 
@@ -134,17 +132,11 @@ public sealed class OperationRowViewModel
 
     public OperationRecord Record { get; }
 
-    public string TypeText => Record.OperationType switch
-    {
-        TaskTypeNames.ChangeExtension => "Change extension",
-        TaskTypeNames.AddTag => "Add tag",
-        TaskTypeNames.RemoveTag => "Remove tag",
-        _ => Record.OperationType,
-    };
+    public string TypeText => DisplayNames.Operation(Record.OperationType);
 
     public string DescriptionText => Record.Description ?? string.Empty;
 
-    public string CountsText => $"{Record.SuccessCount:N0} ok · {Record.FailureCount:N0} failed · {Record.ItemCount:N0} total";
+    public string CountsText => Loc.Instance.F("History_Counts", Record.SuccessCount, Record.FailureCount, Record.ItemCount);
 
     public bool HasFailures => Record.FailureCount > 0;
 

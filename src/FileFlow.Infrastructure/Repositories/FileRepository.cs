@@ -226,14 +226,19 @@ public sealed class FileRepository : IFileRepository
                 using var transaction = connection.BeginTransaction();
                 try
                 {
-                    SqliteHelpers.ExecuteNonQuery(
-                        connection,
-                        "CREATE TEMP TABLE IF NOT EXISTS seen_paths (path TEXT PRIMARY KEY)",
-                        Array.Empty<SqliteParameter>());
-                    SqliteHelpers.ExecuteNonQuery(
-                        connection,
-                        "DELETE FROM seen_paths",
-                        Array.Empty<SqliteParameter>());
+                    using (var createTemp = SqliteHelpers.CreateCommand(
+                               connection,
+                               "CREATE TEMP TABLE IF NOT EXISTS seen_paths (path TEXT PRIMARY KEY)"))
+                    {
+                        createTemp.Transaction = transaction;
+                        createTemp.ExecuteNonQuery();
+                    }
+
+                    using (var clearTemp = SqliteHelpers.CreateCommand(connection, "DELETE FROM seen_paths"))
+                    {
+                        clearTemp.Transaction = transaction;
+                        clearTemp.ExecuteNonQuery();
+                    }
 
                     using var insert = SqliteHelpers.CreateCommand(
                         connection,

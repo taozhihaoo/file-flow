@@ -131,8 +131,7 @@ public sealed class ImportExportService : IImportExportService
             throw FileFlowException.Persistence($"Could not read the CSV file: {ex.Message}", ex);
         }
 
-        // Deduplicate against the library and insert/update in batches.
-        var seenPaths = new HashSet<string>(pending.Select(p => p.Path), StringComparer.OrdinalIgnoreCase);
+        // Insert new records and refresh the metadata of the ones we already know.
         var batch = new List<FileRecord>(DbBatchSize);
         foreach (var entry in pending)
         {
@@ -145,9 +144,10 @@ public sealed class ImportExportService : IImportExportService
             }
             else
             {
+                // created_at is only known from the scan of the real file: the CSV carries
+                // modified_at, so keeping the stored value avoids replacing it with a guess.
                 existing.SizeBytes = entry.Record.SizeBytes;
                 existing.ModifiedAtUtc = entry.Record.ModifiedAtUtc;
-                existing.CreatedAtUtc = entry.Record.CreatedAtUtc;
                 existing.IsMissing = false;
                 existing.ScannedAtUtc = DateTime.UtcNow;
                 result.Updated++;
@@ -183,7 +183,24 @@ public sealed class ImportExportService : IImportExportService
 
             foreach (var tagName in entry.Tags)
             {
-                var tag = await _tags.GetByNameAsync(tagName, cancellationToken) ?? await _tags.CreateAsync(tagName, null, cancellationToken);
+                var tag = await _tags.GetByNameAsync(tagName, cancellationToken);
+                if (tag is null)
+                {
+                    try
+                    {
+                        tag = await _tags.CreateAsync(tagName, null, cancellationToken);
+                    }
+                    catch (FileFlowException ex) when (ex.Kind == ErrorKind.OperationConflict)
+                    {
+                        // Another writer created the same tag in the meantime.
+                        tag = await _tags.GetByNameAsync(tagName, cancellationToken);
+                        if (tag is null)
+                        {
+                            throw;
+                        }
+                    }
+                }
+
                 await _tags.AddTagToFilesAsync(tag.Id, [record.Id], cancellationToken);
             }
         }

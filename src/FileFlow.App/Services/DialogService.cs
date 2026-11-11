@@ -1,5 +1,6 @@
 using System.Windows;
 using Microsoft.Win32;
+using FileFlow.App.Localization;
 using FileFlow.Core.Models;
 using FileFlow.App.Dialogs;
 using FileFlow.App.ViewModels;
@@ -18,7 +19,7 @@ public sealed class DialogService : IDialogService
             Title = title,
             Message = message,
             Details = details,
-            ConfirmText = "OK",
+            ConfirmText = Loc.Instance["Common_OK"],
         };
         var dialog = new ConfirmDialog(viewModel) { Owner = OwnerWindow };
         return dialog.ShowDialog() == true;
@@ -34,11 +35,11 @@ public sealed class DialogService : IDialogService
         MessageBox.Show(OwnerWindow, message, title, MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
-    public string? PickFolder(string? initialPath, string title = "Select folder")
+    public string? PickFolder(string? initialPath, string? title = null)
     {
         var dialog = new OpenFolderDialog
         {
-            Title = title,
+            Title = title ?? Loc.Instance["Common_Browse"],
         };
         if (!string.IsNullOrEmpty(initialPath) && System.IO.Directory.Exists(initialPath))
         {
@@ -52,9 +53,9 @@ public sealed class DialogService : IDialogService
     {
         var dialog = new SaveFileDialog
         {
-            Title = "Export CSV",
+            Title = Loc.Instance["Files_Export"],
             FileName = defaultFileName,
-            Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+            Filter = "CSV (*.csv)|*.csv|*.*|*.*",
             DefaultExt = "csv",
         };
         if (!string.IsNullOrEmpty(initialDirectory) && System.IO.Directory.Exists(initialDirectory))
@@ -69,8 +70,8 @@ public sealed class DialogService : IDialogService
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Import CSV",
-            Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+            Title = Loc.Instance["Files_Import"],
+            Filter = "CSV (*.csv)|*.csv|*.*|*.*",
             CheckFileExists = true,
         };
         return dialog.ShowDialog(OwnerWindow) == true ? dialog.FileName : null;
@@ -97,7 +98,7 @@ public sealed class DialogService : IDialogService
             Label = allowCreate
                 ? "Choose an existing tag or create a new one."
                 : "Choose the tag to remove.",
-            ConfirmText = "OK",
+            ConfirmText = Loc.Instance["Common_OK"],
             AllowCreate = allowCreate,
             Tags = existingTags,
         };

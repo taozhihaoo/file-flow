@@ -12,7 +12,9 @@ namespace FileFlow.Core.Scanning;
 public sealed class FileScanner
 {
     private const int ProgressBatchSize = 50;
-    private const int CancellationCheckInterval = 16;
+
+    /// <summary>Minimum time between progress callbacks; the UI dispatches one message per report.</summary>
+    private const int ProgressIntervalMs = 120;
 
     private readonly IFileSystem _fileSystem;
 
@@ -38,6 +40,7 @@ public sealed class FileScanner
         var root = System.IO.Path.GetFullPath(rootPath);
         var result = new ScanResult { RootPath = root };
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var progressStopwatch = System.Diagnostics.Stopwatch.StartNew();
         var pending = new Stack<string>();
         pending.Push(root);
         var filesFound = 0;
@@ -111,17 +114,16 @@ public sealed class FileScanner
                     });
                     filesFound++;
 
-                    if (filesFound % ProgressBatchSize == 0)
+                    if (filesFound % ProgressBatchSize == 0 && progressStopwatch.ElapsedMilliseconds >= ProgressIntervalMs)
                     {
                         Report(progress, result, filesFound, directory);
+                        progressStopwatch.Restart();
                     }
                 }
-
-                if (filesFound % ProgressBatchSize != 0)
-                {
-                    Report(progress, result, filesFound, directory);
-                }
             }
+
+            // A final report so a small or very fast scan still ends with the real total.
+            Report(progress, result, filesFound, root);
         }
         finally
         {

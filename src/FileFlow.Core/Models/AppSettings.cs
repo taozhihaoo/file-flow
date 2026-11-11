@@ -31,6 +31,9 @@ public sealed class AppSettings
     /// <summary>Minimum level for file logging: Trace, Debug, Information, Warning, Error.</summary>
     public string LogLevel { get; set; } = "Information";
 
+    /// <summary>Interface language: "en" (default) or "zh-CN". Unknown values fall back to English.</summary>
+    public string UiLanguage { get; set; } = Localization.AppLanguages.Default;
+
     public static AppSettings Defaults() => new();
 
     public AppSettings Clone() => new()
@@ -42,6 +45,7 @@ public sealed class AppSettings
         ConfirmDestructiveOperations = ConfirmDestructiveOperations,
         DeleteToRecycleBin = DeleteToRecycleBin,
         LogLevel = LogLevel,
+        UiLanguage = UiLanguage,
     };
 
     public int EffectiveConcurrency => Math.Clamp(MaxConcurrentOperations, MinConcurrency, MaxConcurrency);

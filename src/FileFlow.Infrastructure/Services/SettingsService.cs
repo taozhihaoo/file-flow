@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FileFlow.Core;
 using FileFlow.Core.Interfaces;
+using FileFlow.Core.Localization;
 using FileFlow.Core.Models;
 using FileFlow.Core.Validation;
 using Microsoft.Extensions.Logging;
@@ -79,6 +80,8 @@ public sealed class SettingsService : ISettingsService
         var level = ValidLogLevels.FirstOrDefault(
             l => string.Equals(l, settings.LogLevel, StringComparison.OrdinalIgnoreCase));
         settings.LogLevel = level ?? "Information";
+
+        settings.UiLanguage = AppLanguages.Normalize(settings.UiLanguage);
 
         if (string.IsNullOrWhiteSpace(settings.ExportDirectory))
         {

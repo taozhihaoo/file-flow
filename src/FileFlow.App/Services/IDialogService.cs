@@ -16,7 +16,7 @@ public interface IDialogService
     void ShowInfo(string title, string message);
 
     /// <summary>Folder picker. Returns null when the user cancels.</summary>
-    string? PickFolder(string? initialPath, string title = "Select folder");
+    string? PickFolder(string? initialPath, string? title = null);
 
     string? PickSaveCsvFile(string defaultFileName, string? initialDirectory);
 

@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using FileFlow.Core.Interfaces;
+using FileFlow.Core.Models;
 using FileFlow.Core.Planning;
 using FileFlow.Core.Scanning;
 using FileFlow.Infrastructure;
@@ -9,6 +10,7 @@ using FileFlow.Infrastructure.FileSystem;
 using FileFlow.Infrastructure.Logging;
 using FileFlow.Infrastructure.Repositories;
 using FileFlow.Infrastructure.Services;
+using FileFlow.App.Localization;
 using FileFlow.App.Services;
 using FileFlow.App.ViewModels;
 using FileFlow.App.Views;
@@ -86,11 +88,43 @@ public partial class App : Application
 
             await Task.Run(() => _serviceProvider.GetRequiredService<DbMigrator>().Migrate());
             await settingsServiceRef.LoadAsync();
+
+            // The interface language must be known before any window or view model is created.
+            var languageOverride = ParseOption(e.Args, "--lang");
+            Loc.Initialize(languageOverride ?? settingsServiceRef.Current.UiLanguage);
+
+            // Optional: index a folder first so the captured screenshots are not empty.
+            var seedFolder = ParseOption(e.Args, "--capture-scan");
+            if (!string.IsNullOrEmpty(seedFolder))
+            {
+                if (Directory.Exists(seedFolder))
+                {
+                    await _serviceProvider.GetRequiredService<ILibraryService>()
+                        .ScanDirectoryAsync(seedFolder, new ScanOptions(true, false), null, CancellationToken.None);
+                }
+                else
+                {
+                    logger.LogWarning("Capture seed folder does not exist: {Folder}", seedFolder);
+                }
+            }
+
             await _serviceProvider.GetRequiredService<ITaskQueueService>().StartAsync();
 
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             MainWindow = mainWindow;
             mainWindow.Show();
+
+            var captureDirectory = ParseOption(e.Args, "--capture");
+            if (!string.IsNullOrEmpty(captureDirectory))
+            {
+                var captured = await ScreenshotService.CaptureAllAsync(
+                    mainWindow,
+                    _serviceProvider.GetRequiredService<MainViewModel>(),
+                    captureDirectory);
+                logger.LogInformation("Captured {Count} screenshot(s) into {Directory}", captured, captureDirectory);
+                Shutdown(0);
+                return;
+            }
         }
         catch (Exception ex)
         {
@@ -108,9 +142,9 @@ public partial class App : Application
             }
 
             MessageBox.Show(
-                "FileFlow failed to start.\n\n" + ex.Message
-                + "\n\nDetails were written to the log folder (startup-crash.txt).",
-                "FileFlow",
+                Loc.Instance["App_StartupFailed"] + "\n\n" + ex.Message
+                + "\n\n" + Loc.Instance["App_StartupHint"],
+                Loc.Instance["AppName"],
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             Shutdown(1);
@@ -137,11 +171,14 @@ public partial class App : Application
     }
 
     /// <summary>Supports "--datadir &lt;path&gt;" for portable/test runs; the default is %LOCALAPPDATA%\FileFlow.</summary>
-    private static string? ParseDataDirectory(string[] args)
+    private static string? ParseDataDirectory(string[] args) => ParseOption(args, "--datadir");
+
+    /// <summary>Reads "--name value" from the command line; returns null when absent.</summary>
+    private static string? ParseOption(string[] args, string name)
     {
         for (var i = 0; i < args.Length - 1; i++)
         {
-            if (string.Equals(args[i], "--datadir", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase))
             {
                 return args[i + 1];
             }

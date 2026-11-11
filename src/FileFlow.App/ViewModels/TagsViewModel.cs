@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FileFlow.App.Localization;
 using FileFlow.App.Services;
 using FileFlow.Core;
 using FileFlow.Core.Interfaces;
@@ -56,10 +57,10 @@ public partial class TagsViewModel : ObservableObject, IRefreshable
     private async Task NewAsync()
     {
         var name = _dialogs.PromptText(
-            "New tag",
-            "Tag name:",
+            Loc.Instance["Tags_NewTitle"],
+            Loc.Instance["Tags_NamePrompt"],
             string.Empty,
-            value => value.Trim().Length == 0 ? "Tag name cannot be empty." : null);
+            value => value.Trim().Length == 0 ? Loc.Instance["Tags_NameEmpty"] : null);
         if (name is null)
         {
             return;
@@ -73,7 +74,7 @@ public partial class TagsViewModel : ObservableObject, IRefreshable
         }
         catch (FileFlowException ex)
         {
-            _dialogs.ShowError("New tag", ex.Message);
+            _dialogs.ShowError(Loc.Instance["Tags_NewTitle"], ex.Message);
         }
     }
 
@@ -87,10 +88,10 @@ public partial class TagsViewModel : ObservableObject, IRefreshable
 
         var current = SelectedTag;
         var name = _dialogs.PromptText(
-            "Rename tag",
-            $"New name for tag '{current.Name}':",
+            Loc.Instance["Tags_RenameTitle"],
+            Loc.Instance.F("Tags_RenamePrompt", current.Name),
             current.Name,
-            value => value.Trim().Length == 0 ? "Tag name cannot be empty." : null);
+            value => value.Trim().Length == 0 ? Loc.Instance["Tags_NameEmpty"] : null);
         if (name is null || name.Equals(current.Name, StringComparison.Ordinal))
         {
             return;
@@ -103,7 +104,7 @@ public partial class TagsViewModel : ObservableObject, IRefreshable
         }
         catch (FileFlowException ex)
         {
-            _dialogs.ShowError("Rename tag", ex.Message);
+            _dialogs.ShowError(Loc.Instance["Tags_RenameTitle"], ex.Message);
         }
     }
 
@@ -117,9 +118,9 @@ public partial class TagsViewModel : ObservableObject, IRefreshable
 
         var current = SelectedTag;
         if (!_dialogs.Confirm(
-                "Delete tag",
-                $"Delete tag '{current.Name}'?",
-                $"The tag is removed from {current.FileCount:N0} file(s). The files themselves are not touched."))
+                Loc.Instance["Tags_DeleteTitle"],
+                Loc.Instance.F("Tags_DeleteMessage", current.Name),
+                Loc.Instance.F("Tags_DeleteDetails", current.FileCount)))
         {
             return;
         }
@@ -132,7 +133,7 @@ public partial class TagsViewModel : ObservableObject, IRefreshable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Could not delete tag {TagId}", current.Id);
-            _dialogs.ShowError("Delete tag", "Could not delete the tag: " + ex.Message);
+            _dialogs.ShowError(Loc.Instance["Tags_DeleteTitle"], Loc.Instance.F("Tags_DeleteError", ex.Message));
         }
     }
 }

@@ -25,6 +25,11 @@ public sealed class FileService : IFileService
         EnsureValidPath(sourcePath, "source");
         EnsureValidPath(targetPath, "target");
 
+        if (string.Equals(sourcePath, targetPath, StringComparison.Ordinal))
+        {
+            return; // nothing to do; moving a file onto itself is an error in the shell API
+        }
+
         // Case-only renames (A.txt -> a.txt) are legal on Windows; nothing else may collide.
         var caseOnlyRename = string.Equals(sourcePath, targetPath, StringComparison.OrdinalIgnoreCase);
 

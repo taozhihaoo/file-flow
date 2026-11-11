@@ -48,7 +48,9 @@ public sealed class NullToVisibilityConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        var visible = !(string.IsNullOrEmpty(value as string) || value is null);
+        // Any non-null object counts as a value: an earlier version applied string
+        // semantics to every input, which hid the details panel for a selected object.
+        var visible = value is not null && !(value is string text && text.Length == 0);
         if (string.Equals(parameter as string, "invert", StringComparison.OrdinalIgnoreCase))
         {
             visible = !visible;

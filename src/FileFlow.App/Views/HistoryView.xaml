@@ -1,38 +1,47 @@
 <UserControl x:Class="FileFlow.App.Views.HistoryView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid Margin="24,18,24,16">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:FileFlow.App.Localization">
+    <Grid Margin="26,18,26,18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0"
-                Margin="0,0,0,12"
-                Padding="12,10"
-                Background="{StaticResource Surface}"
-                BorderBrush="{StaticResource SurfaceBorder}"
-                BorderThickness="1"
-                CornerRadius="8">
+        <Border Grid.Row="0" Margin="0,0,0,12" Padding="14,11" Style="{StaticResource Card}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Muted}" Text="Operation type"/>
-                    <ComboBox Margin="10,0,0,0"
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="26"
+                            Height="26"
+                            VerticalAlignment="Center"
+                            Background="{StaticResource SurfaceMuted}"
+                            CornerRadius="7">
+                        <TextBlock Style="{StaticResource Glyph}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextSecondary}"
+                                   Text="&#xE71C;"/>
+                    </Border>
+                    <TextBlock Margin="10,0,12,0"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Foreground="{StaticResource TextSecondary}"
+                               Text="{loc:T History_TypeFilter}"/>
+                    <ComboBox MinWidth="170"
+                              DisplayMemberPath="Display"
                               ItemsSource="{Binding TypeFilters}"
                               SelectedItem="{Binding SelectedTypeFilter}"
                               Style="{StaticResource AppComboBox}"/>
                 </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Command="{Binding LoadMoreCommand}"
-                            Content="Load more"
-                            IsEnabled="{Binding CanLoadMore}"
-                            Style="{StaticResource AppButton}"/>
-                </StackPanel>
+                <Button Grid.Column="2"
+                        Command="{Binding LoadMoreCommand}"
+                        Content="{loc:T Common_LoadMore}"
+                        IsEnabled="{Binding CanLoadMore}"
+                        Style="{StaticResource AppButton}"/>
             </Grid>
         </Border>
 
@@ -40,38 +49,36 @@
                 Background="{StaticResource Surface}"
                 BorderBrush="{StaticResource SurfaceBorder}"
                 BorderThickness="1"
-                CornerRadius="8"
+                CornerRadius="12"
                 ClipToBounds="True">
             <Grid>
                 <DataGrid ItemsSource="{Binding Operations}"
-                          Style="{StaticResource AppDataGrid}"
                           IsReadOnly="True"
+                          Style="{StaticResource AppDataGrid}"
                           Visibility="{Binding Operations.Count, Converter={StaticResource ZeroToVisibility}, ConverterParameter=invert}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Binding="{Binding WhenText}" Header="When" Width="150"/>
-                        <DataGridTextColumn Binding="{Binding TypeText}" Header="Operation" Width="150">
+                        <DataGridTextColumn Binding="{Binding WhenText}" Header="{loc:T History_ColWhen}" Width="160">
                             <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Margin" Value="10,0"/>
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource GridCellPadding}">
+                                    <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Binding="{Binding TypeText}" Header="{loc:T History_ColOperation}" Width="160">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource GridCellPadding}">
                                     <Setter Property="FontWeight" Value="SemiBold"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
-                        <DataGridTextColumn Binding="{Binding DescriptionText}" Header="Details" Width="*">
+                        <DataGridTextColumn Binding="{Binding DescriptionText}" Header="{loc:T History_ColDetails}" Width="*">
                             <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Margin" Value="10,0"/>
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
-                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-                                </Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource GridCellPadding}"/>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
-                        <DataGridTextColumn Binding="{Binding CountsText}" Header="Result" Width="220">
+                        <DataGridTextColumn Binding="{Binding CountsText}" Header="{loc:T History_ColResult}" Width="230">
                             <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Margin" Value="10,0"/>
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource GridCellPadding}">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding HasFailures}" Value="True">
                                             <Setter Property="Foreground" Value="{StaticResource Warning}"/>
@@ -86,13 +93,21 @@
                 <StackPanel HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Visibility="{Binding Operations.Count, Converter={StaticResource ZeroToVisibility}}">
-                    <TextBlock HorizontalAlignment="Center"
-                               FontFamily="{StaticResource IconFontFamily}"
-                               FontSize="40"
-                               Foreground="{StaticResource TextDisabled}"
-                               Text="&#xE81C;"/>
-                    <TextBlock Margin="0,12,0,0" HorizontalAlignment="Center" Style="{StaticResource H2}" Text="No operations recorded yet"/>
-                    <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" Style="{StaticResource Muted}" Text="Scans, batch operations and imports are recorded here."/>
+                    <Border Width="52"
+                            Height="52"
+                            HorizontalAlignment="Center"
+                            Background="{StaticResource SurfaceMuted}"
+                            CornerRadius="14">
+                        <TextBlock Style="{StaticResource Glyph}"
+                                   FontSize="22"
+                                   Foreground="{StaticResource TextMuted}"
+                                   Text="&#xE81C;"/>
+                    </Border>
+                    <TextBlock Margin="0,14,0,0" HorizontalAlignment="Center" Style="{StaticResource H2}" Text="{loc:T History_EmptyTitle}"/>
+                    <TextBlock Margin="0,5,0,0"
+                               HorizontalAlignment="Center"
+                               Style="{StaticResource Muted}"
+                               Text="{loc:T History_EmptyHint}"/>
                 </StackPanel>
             </Grid>
         </Border>

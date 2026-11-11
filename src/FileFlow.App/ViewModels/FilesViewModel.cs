@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text.Json;
-using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FileFlow.App.Localization;
 using FileFlow.App.Services;
 using FileFlow.Core;
 using FileFlow.Core.Interfaces;
@@ -36,6 +37,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
     private CancellationTokenSource? _searchCts;
     private CancellationTokenSource? _scanCts;
     private int _suppressSearch;
+    private int _suppressFilterSearch;
     private readonly SemaphoreSlim _searchGate = new(1, 1);
 
     public FilesViewModel(
@@ -63,6 +65,12 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
 
         ScanRecursive = settings.Current.ScanRecursive;
         ScanIncludeHidden = settings.Current.ScanIncludeHidden;
+
+        ExtensionOptions.Add(new FilterOption(string.Empty, Loc.Instance["Files_AllExtensions"]));
+        SelectedExtensionOption = ExtensionOptions[0];
+        TagOptions.Add(new TagFilterOption(null, Loc.Instance["Files_AllTags"]));
+        SelectedTagOption = TagOptions[0];
+        ScanStatusText = Loc.Instance["Files_StatusIdle"];
     }
 
     public ObservableCollection<FileRowViewModel> Results { get; } = new();
@@ -70,18 +78,18 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
     /// <summary>Backed by DataGridSelectionBehavior (DataGrid.SelectedItems is not bindable).</summary>
     public IList SelectedRows { get; } = new ArrayList();
 
-    public ObservableCollection<string> Extensions { get; } = new();
+    public ObservableCollection<FilterOption> ExtensionOptions { get; } = new();
 
-    public ObservableCollection<Tag> Tags { get; } = new();
+    public ObservableCollection<TagFilterOption> TagOptions { get; } = new();
+
+    [ObservableProperty]
+    private FilterOption? selectedExtensionOption;
+
+    [ObservableProperty]
+    private TagFilterOption? selectedTagOption;
 
     [ObservableProperty]
     private string searchText = string.Empty;
-
-    [ObservableProperty]
-    private string selectedExtension = "(all)";
-
-    [ObservableProperty]
-    private Tag? selectedTagFilter;
 
     [ObservableProperty]
     private string sizeMinText = string.Empty;
@@ -132,12 +140,22 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
 
     public bool HasSelectionOfTwoOrMore => SelectedCount >= 2;
 
+    /// <summary>Selection summary shown in the action bar.</summary>
+    public string SelectionText => Loc.Instance.F("Files_SelectedCount", SelectedCount);
+
     // ------------------------------------------------------------------ refresh
 
     public async Task RefreshAsync()
     {
         await LoadFilterOptionsAsync();
         await SearchNowAsync();
+    }
+
+    /// <summary>Re-renders the generated text after a language change and re-runs the query.</summary>
+    public async Task RefreshLocalizationAsync()
+    {
+        OnPropertyChanged(nameof(SelectionText));
+        await RefreshAsync();
     }
 
     private async Task LoadFilterOptionsAsync()
@@ -147,37 +165,67 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
             var extensions = await _files.GetExtensionsAsync();
             var tags = await _tags.GetAllAsync();
 
-            var selectedExtensionValue = SelectedExtension;
-            Extensions.Clear();
-            Extensions.Add("(all)");
+            var selectedExtensionValue = SelectedExtensionOption?.Value ?? string.Empty;
+            _suppressFilterSearch++;
+
+            ExtensionOptions.Clear();
+            ExtensionOptions.Add(new FilterOption(string.Empty, Loc.Instance["Files_AllExtensions"]));
             foreach (var extension in extensions)
             {
-                Extensions.Add(extension);
+                ExtensionOptions.Add(new FilterOption(extension, extension));
             }
 
-            SelectedExtension = extensions.Contains(selectedExtensionValue, StringComparer.OrdinalIgnoreCase)
-                ? selectedExtensionValue
-                : "(all)";
+            SelectedExtensionOption = ExtensionOptions.FirstOrDefault(
+                o => string.Equals(o.Value, selectedExtensionValue, StringComparison.OrdinalIgnoreCase))
+                ?? ExtensionOptions[0];
 
-            var selectedTagId = SelectedTagFilter?.Id;
-            Tags.Clear();
+            var selectedTagId = SelectedTagOption?.TagId;
+            TagOptions.Clear();
+            TagOptions.Add(new TagFilterOption(null, Loc.Instance["Files_AllTags"]));
             foreach (var tag in tags)
             {
-                Tags.Add(tag);
+                TagOptions.Add(new TagFilterOption(tag.Id, tag.Name));
             }
 
-            SelectedTagFilter = tags.FirstOrDefault(t => t.Id == selectedTagId);
+            SelectedTagOption = TagOptions.FirstOrDefault(o => o.TagId == selectedTagId) ?? TagOptions[0];
+            _suppressFilterSearch--;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Could not load filter options");
+            _suppressFilterSearch = 0;
+            _logger.LogError(ex, "Could not load the filter options");
         }
     }
 
     // ------------------------------------------------------------------ search
 
-    partial void OnSearchTextChanged(string value)
+    partial void OnSearchTextChanged(string value) => QueueSearch();
+
+    partial void OnSelectedExtensionOptionChanged(FilterOption? value) => QueueSearch();
+
+    partial void OnSelectedTagOptionChanged(TagFilterOption? value) => QueueSearch();
+
+    partial void OnOnlyMissingChanged(bool value) => QueueSearch();
+
+    partial void OnModifiedFromChanged(DateTime? value) => QueueSearch();
+
+    partial void OnModifiedToChanged(DateTime? value) => QueueSearch();
+
+    partial void OnSizeMinTextChanged(string value) => QueueSearch();
+
+    partial void OnSizeMaxTextChanged(string value) => QueueSearch();
+
+    /// <summary>
+    /// Every filter change goes through the same debounce: typing a size or flipping a
+    /// checkbox used to fire one database query per keystroke.
+    /// </summary>
+    private void QueueSearch()
     {
+        if (_suppressFilterSearch > 0)
+        {
+            return;
+        }
+
         _searchCts?.Cancel();
         _ = DebouncedSearchAsync();
     }
@@ -196,23 +244,9 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         }
         catch (TaskCanceledException)
         {
-            // superseded by a newer keystroke
+            // superseded by a newer change
         }
     }
-
-    partial void OnSelectedExtensionChanged(string value) => _ = SearchNowAsync();
-
-    partial void OnSelectedTagFilterChanged(Tag? value) => _ = SearchNowAsync();
-
-    partial void OnOnlyMissingChanged(bool value) => _ = SearchNowAsync();
-
-    partial void OnModifiedFromChanged(DateTime? value) => _ = SearchNowAsync();
-
-    partial void OnModifiedToChanged(DateTime? value) => _ = SearchNowAsync();
-
-    partial void OnSizeMinTextChanged(string value) => _ = SearchNowAsync();
-
-    partial void OnSizeMaxTextChanged(string value) => _ = SearchNowAsync();
 
     private SearchFilter BuildFilter()
     {
@@ -222,14 +256,15 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
             Limit = SearchPageSize,
         };
 
-        if (!string.Equals(SelectedExtension, "(all)", StringComparison.Ordinal))
+        var extension = SelectedExtensionOption?.Value;
+        if (!string.IsNullOrEmpty(extension))
         {
-            filter.Extension = SelectedExtension;
+            filter.Extension = extension;
         }
 
-        if (SelectedTagFilter is not null)
+        if (SelectedTagOption?.TagId is { } tagId)
         {
-            filter.TagIds = [SelectedTagFilter.Id];
+            filter.TagIds = [tagId];
         }
 
         if (TryParseBytes(SizeMinText, out var minSize))
@@ -276,7 +311,8 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         else if (suffix.EndsWith("MB")) { multiplier = 1024 * 1024; trimmed = trimmed[..^2]; }
         else if (suffix.EndsWith("GB")) { multiplier = 1024L * 1024 * 1024; trimmed = trimmed[..^2]; }
 
-        if (!double.TryParse(trimmed, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out var value))
+        if (!double.TryParse(trimmed, NumberStyles.Float, CultureInfo.CurrentCulture, out var value)
+            && !double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
         {
             return false;
         }
@@ -319,8 +355,8 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
             SelectedRows.Clear();
             OnSelectionChanged();
             ScanStatusText = total >= SearchPageSize
-                ? $"Showing first {SearchPageSize:N0} of {total:N0} matching files."
-                : $"{total:N0} file(s) found.";
+                ? Loc.Instance.F("Files_StatusShowing", SearchPageSize, total)
+                : Loc.Instance.F("Files_StatusFound", total);
         }
         catch (OperationCanceledException)
         {
@@ -329,7 +365,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         catch (Exception ex)
         {
             _logger.LogError(ex, "Search failed");
-            ScanStatusText = "Search failed: " + ex.Message;
+            ScanStatusText = Loc.Instance.F("Files_StatusSearchFailed", ex.Message);
         }
         finally
         {
@@ -342,14 +378,16 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
     private async Task ClearFiltersAsync()
     {
         _suppressSearch = 1;
+        _suppressFilterSearch++;
         SearchText = string.Empty;
-        SelectedExtension = "(all)";
-        SelectedTagFilter = null;
+        SelectedExtensionOption = ExtensionOptions.FirstOrDefault();
+        SelectedTagOption = TagOptions.FirstOrDefault();
         SizeMinText = string.Empty;
         SizeMaxText = string.Empty;
         ModifiedFrom = null;
         ModifiedTo = null;
         OnlyMissing = false;
+        _suppressFilterSearch--;
         _suppressSearch = 0;
         await SearchNowAsync();
     }
@@ -366,12 +404,12 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
                 var changed = await _library.RefreshMissingAsync(ids);
                 if (changed > 0)
                 {
-                    ScanStatusText = $"{changed} file(s) updated after existence check.";
+                    ScanStatusText = Loc.Instance.F("Files_StatusChecked", changed);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Existence check failed");
+                _logger.LogError(ex, "The existence check failed");
             }
         }
 
@@ -383,7 +421,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
     [RelayCommand]
     private void BrowseScanFolder()
     {
-        var folder = _dialogs.PickFolder(ScanFolder, "Choose a folder to scan");
+        var folder = _dialogs.PickFolder(ScanFolder, Loc.Instance["Files_DlgPickScanFolder"]);
         if (folder is not null)
         {
             ScanFolder = folder;
@@ -396,49 +434,53 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         var folder = ScanFolder.Trim();
         if (folder.Length == 0)
         {
-            _dialogs.ShowError("Scan", "Choose a folder to scan first.");
+            _dialogs.ShowError(Loc.Instance["Files_DlgScanTitle"], Loc.Instance["Files_DlgChooseFolderFirst"]);
             return;
         }
 
         if (!Directory.Exists(folder))
         {
-            _dialogs.ShowError("Scan", $"The folder does not exist:\n{folder}");
+            _dialogs.ShowError(Loc.Instance["Files_DlgScanTitle"], Loc.Instance.F("Files_DlgFolderMissing", folder));
             return;
         }
 
         _scanCts = new CancellationTokenSource();
         ScanRunning = true;
         ScanProgressPercent = 0;
-        ScanStatusText = "Scanning...";
+        ScanStatusText = Loc.Instance["Files_StatusScanStart"];
 
         var progress = new Progress<ScanProgress>(p =>
         {
-            ScanStatusText = $"Scanning... {p.FilesFound:N0} files · {p.DirectoriesVisited:N0} folders · {p.ErrorCount} errors";
+            ScanStatusText = Loc.Instance.F("Files_StatusScanning", p.FilesFound, p.DirectoriesVisited, p.ErrorCount);
         });
 
         try
         {
             var options = new ScanOptions(ScanRecursive, ScanIncludeHidden);
             var result = await _library.ScanDirectoryAsync(folder, options, progress, _scanCts.Token);
-            ScanStatusText = $"Scan finished: {result.Files.Count:N0} files indexed, {result.Errors.Count} error(s), {result.Elapsed.TotalSeconds:0.0} s.";
+            ScanStatusText = Loc.Instance.F(
+                "Files_StatusScanDone",
+                result.Files.Count,
+                result.Errors.Count,
+                result.Elapsed.TotalSeconds.ToString("0.0", CultureInfo.CurrentCulture));
             await LoadFilterOptionsAsync();
             await SearchNowAsync();
         }
         catch (OperationCanceledException)
         {
-            ScanStatusText = "Scan cancelled.";
+            ScanStatusText = Loc.Instance["Files_StatusScanCancelled"];
             await SearchNowAsync();
         }
         catch (FileFlowException ex)
         {
-            ScanStatusText = "Scan failed.";
-            _dialogs.ShowError("Scan failed", ex.Message);
+            ScanStatusText = Loc.Instance["Files_StatusScanFailed"];
+            _dialogs.ShowError(Loc.Instance["Files_DlgScanFailed"], ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Scan failed unexpectedly");
-            ScanStatusText = "Scan failed.";
-            _dialogs.ShowError("Scan failed", "Unexpected error: " + ex.Message);
+            _logger.LogError(ex, "The scan failed unexpectedly");
+            ScanStatusText = Loc.Instance["Files_StatusScanFailed"];
+            _dialogs.ShowError(Loc.Instance["Files_DlgScanFailed"], Loc.Instance.F("Files_DlgUnexpected", ex.Message));
         }
         finally
         {
@@ -459,6 +501,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         SelectedCount = SelectedRows.Count;
         OnPropertyChanged(nameof(HasSelection));
         OnPropertyChanged(nameof(HasSelectionOfTwoOrMore));
+        OnPropertyChanged(nameof(SelectionText));
         SelectedFile = SelectedRows.Count > 0 ? (FileRowViewModel)SelectedRows[0]! : null;
     }
 
@@ -471,15 +514,14 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         {
             if (Core.Validation.ProtectedPathGuard.IsProtected(record.FullPath, Core.Validation.ProtectedPathGuard.DefaultProtectedRoots))
             {
-                return $"The selection contains files inside a critical system directory ({record.FullPath}). "
-                       + "Batch operations here can damage Windows. Make sure you know what you are doing.";
+                return Loc.Instance.F("Files_ProtectedWarning", record.FullPath);
             }
         }
 
         return string.Empty;
     }
 
-    private TaskItemRecord[] BuildItems(IEnumerable<PlanEntry> entries) =>
+    private static TaskItemRecord[] BuildItems(IEnumerable<PlanEntry> entries) =>
         entries.Select(e => new TaskItemRecord
         {
             SourcePath = e.SourcePath,
@@ -502,8 +544,8 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
             new RenameRules(),
             rules => _renamePlanner.Plan(inputs, rules))
         {
-            Title = "Batch rename",
-            Description = $"Review how {records.Count:N0} file(s) will be renamed. The preview updates as you change the rules.",
+            Title = Loc.Instance["Files_RenameTitle"],
+            Description = Loc.Instance.F("Files_RenameDesc", records.Count),
         };
 
         if (!_dialogs.ShowBatchPreview(preview) || preview.CurrentPlan is null)
@@ -514,13 +556,13 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         var plan = preview.CurrentPlan;
         if (plan.ValidCount == 0)
         {
-            _dialogs.ShowError("Rename", "No file can be renamed with these rules.");
+            _dialogs.ShowError(Loc.Instance["Files_RenameTitle"], Loc.Instance["Files_DlgNoRename"]);
             return;
         }
 
         await EnqueueWithConfirmationAsync(
             TaskType.Rename,
-            $"Rename {plan.ValidCount:N0} file(s)",
+            Loc.Instance.F("Files_DescRename", plan.ValidCount),
             BuildItems(plan.Entries.Where(e => e.IsValid)),
             null);
     }
@@ -535,8 +577,8 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         }
 
         var newExtension = _dialogs.PromptText(
-            "Change extension",
-            "New extension for the selected files (e.g. \".pdf\", leave empty to remove the extension):",
+            Loc.Instance["Files_ExtTitle"],
+            Loc.Instance["Files_ExtPrompt"],
             string.Empty,
             value =>
             {
@@ -546,7 +588,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
                     return null;
                 }
 
-                return trimmed.StartsWith('.') ? null : "The extension must start with a dot, e.g. \".pdf\".";
+                return trimmed.StartsWith('.') ? null : Loc.Instance["Files_ExtInvalid"];
             });
         if (newExtension is null)
         {
@@ -557,14 +599,17 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         var plan = _renamePlanner.PlanExtensionChange(inputs, newExtension.Trim());
         if (plan.ValidCount == 0)
         {
-            _dialogs.ShowError("Change extension", "No file can be updated. " + plan.Entries.FirstOrDefault()?.Error);
+            _dialogs.ShowError(
+                Loc.Instance["Files_ExtTitle"],
+                Loc.Instance.F("Files_ExtNone", plan.Entries.FirstOrDefault()?.Error ?? string.Empty));
             return;
         }
 
         var preview = new BatchPreviewViewModel
         {
-            Title = "Change extension",
-            Description = $"Extension will be changed to '{newExtension.Trim()}' for {plan.ValidCount:N0} file(s).",
+            Title = Loc.Instance["Files_ExtTitle"],
+            Description = Loc.Instance.F("Files_ExtDesc", newExtension.Trim(), plan.ValidCount),
+            ConfirmButtonText = Loc.Instance["Files_ExtTitle"],
         };
         preview.ReplaceItems(plan.Entries.Select(e => new PreviewItemViewModel
         {
@@ -580,7 +625,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
 
         await EnqueueWithConfirmationAsync(
             TaskType.ChangeExtension,
-            $"Change extension to '{newExtension.Trim()}' ({plan.ValidCount:N0} file(s))",
+            Loc.Instance.F("Files_DescChangeExt", plan.ValidCount, newExtension.Trim()),
             BuildItems(plan.Entries.Where(e => e.IsValid)),
             null);
     }
@@ -599,7 +644,9 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
             return;
         }
 
-        var targetDirectory = _dialogs.PickFolder(null, isCopy ? "Copy selected files to..." : "Move selected files to...");
+        var targetDirectory = _dialogs.PickFolder(
+            null,
+            Loc.Instance[isCopy ? "Files_PickCopyTarget" : "Files_PickMoveTarget"]);
         if (targetDirectory is null)
         {
             return;
@@ -609,18 +656,21 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         var plan = _transferPlanner.Plan(inputs, targetDirectory, isCopy);
         if (plan.ValidCount == 0)
         {
-            var firstError = plan.Entries.FirstOrDefault()?.Error ?? "Nothing to do.";
-            _dialogs.ShowError(isCopy ? "Copy" : "Move", firstError);
+            var firstError = plan.Entries.FirstOrDefault()?.Error ?? Loc.Instance["Files_NothingToDo"];
+            _dialogs.ShowError(Loc.Instance[isCopy ? "Files_CopyTitle" : "Files_MoveTitle"], firstError);
             return;
         }
 
-        var verb = isCopy ? "Copy" : "Move";
+        var verb = Loc.Instance[isCopy ? "Files_CopyTitle" : "Files_MoveTitle"];
         var preview = new BatchPreviewViewModel
         {
-            Title = $"{verb} to \"{targetDirectory}\"",
-            Description = $"{plan.ValidCount:N0} file(s) will be {(isCopy ? "copied" : "moved")}. Files with conflicts are skipped.",
+            Title = Loc.Instance.F("Files_TransferTitle", verb, targetDirectory),
+            Description = Loc.Instance.F(
+                "Files_TransferDesc",
+                plan.ValidCount,
+                Loc.Instance[isCopy ? "Files_Copied" : "Files_Moved"]),
             Warning = ProtectedWarning(records),
-            ConfirmButtonText = isCopy ? "Copy" : "Move",
+            ConfirmButtonText = verb,
         };
         preview.ReplaceItems(plan.Entries.Select(e => new PreviewItemViewModel
         {
@@ -636,7 +686,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
 
         await EnqueueWithConfirmationAsync(
             isCopy ? TaskType.Copy : TaskType.Move,
-            $"{verb} {plan.ValidCount:N0} file(s) to {targetDirectory}",
+            Loc.Instance.F("Files_DescTransfer", verb, plan.ValidCount, targetDirectory),
             BuildItems(plan.Entries.Where(e => e.IsValid)),
             null);
     }
@@ -651,14 +701,14 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         }
 
         var toRecycleBin = _settings.Current.DeleteToRecycleBin;
-        var destination = toRecycleBin ? "Recycle Bin" : "deleted permanently";
+        var destination = Loc.Instance[toRecycleBin ? "Files_RecycleBin" : "Files_DeletedPermanently"];
 
         var preview = new BatchPreviewViewModel
         {
-            Title = toRecycleBin ? "Move to Recycle Bin" : "Delete files",
-            Description = $"{records.Count:N0} file(s) will be {destination}. Their library records are kept and marked as missing.",
+            Title = Loc.Instance[toRecycleBin ? "Files_DeleteRecycleTitle" : "Files_DeleteTitle"],
+            Description = Loc.Instance.F("Files_DeleteDesc", records.Count, destination),
             Warning = ProtectedWarning(records),
-            ConfirmButtonText = toRecycleBin ? "Move to Recycle Bin" : "Delete permanently",
+            ConfirmButtonText = Loc.Instance[toRecycleBin ? "Files_DeleteRecycleTitle" : "Files_DeleteConfirm"],
         };
         preview.ReplaceItems(records.Select(r => new PreviewItemViewModel
         {
@@ -674,7 +724,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         var items = records.Select(r => new TaskItemRecord { SourcePath = r.FullPath }).ToArray();
         await EnqueueWithConfirmationAsync(
             TaskType.Delete,
-            $"Delete {records.Count:N0} file(s) ({destination})",
+            Loc.Instance.F("Files_DescDelete", records.Count, destination),
             items,
             null);
     }
@@ -699,7 +749,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         var metadata = JsonSerializer.Serialize(new TaskMetadata { TagName = pick.TagName });
         await EnqueueWithConfirmationAsync(
             TaskType.AddTag,
-            $"Add tag '{pick.TagName}' to {records.Count:N0} file(s)",
+            Loc.Instance.F("Files_DescAddTag", pick.TagName, records.Count),
             items,
             metadata);
     }
@@ -724,7 +774,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         var metadata = JsonSerializer.Serialize(new TaskMetadata { TagName = pick.TagName });
         await EnqueueWithConfirmationAsync(
             TaskType.RemoveTag,
-            $"Remove tag '{pick.TagName}' from {records.Count:N0} file(s)",
+            Loc.Instance.F("Files_DescRemoveTag", pick.TagName, records.Count),
             items,
             metadata);
     }
@@ -734,11 +784,11 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         try
         {
             await _queue.EnqueueAsync(type, description, items, metadata);
-            ScanStatusText = $"Task queued: {description}";
+            ScanStatusText = Loc.Instance.F("Files_StatusQueued", description);
         }
         catch (FileFlowException ex)
         {
-            _dialogs.ShowError("Could not queue task", ex.Message);
+            _dialogs.ShowError(Loc.Instance["Files_DlgQueueFailed"], ex.Message);
         }
     }
 
@@ -762,8 +812,8 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Could not open file {Path}", row.File.FullPath);
-            _dialogs.ShowError("Open file", "Windows could not open this file: " + ex.Message);
+            _logger.LogWarning(ex, "Could not open the file {Path}", row.File.FullPath);
+            _dialogs.ShowError(Loc.Instance["Files_DlgOpenFailed"], Loc.Instance.F("Files_CannotOpen", ex.Message));
         }
     }
 
@@ -787,7 +837,7 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Could not open folder for {Path}", target.File.FullPath);
+            _logger.LogWarning(ex, "Could not open the containing folder of {Path}", target.File.FullPath);
         }
     }
 
@@ -814,17 +864,19 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
             IsSearching = true;
             var filter = BuildFilter();
             var result = await _importExport.ExportAsync(target, filter);
-            ScanStatusText = $"Exported {result.FileCount:N0} file record(s).";
-            _dialogs.ShowInfo("Export finished", $"{result.FileCount:N0} file record(s) exported to:\n{result.FilePath}");
+            ScanStatusText = Loc.Instance.F("Files_ExportDone", result.FileCount, result.FilePath);
+            _dialogs.ShowInfo(
+                Loc.Instance["Files_ExportTitle"],
+                Loc.Instance.F("Files_ExportDone", result.FileCount, result.FilePath));
         }
         catch (FileFlowException ex)
         {
-            _dialogs.ShowError("Export failed", ex.Message);
+            _dialogs.ShowError(Loc.Instance["Files_ExportFailed"], ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Export failed");
-            _dialogs.ShowError("Export failed", "Unexpected error: " + ex.Message);
+            _logger.LogError(ex, "The export failed");
+            _dialogs.ShowError(Loc.Instance["Files_ExportFailed"], Loc.Instance.F("Files_DlgUnexpected", ex.Message));
         }
         finally
         {
@@ -846,28 +898,25 @@ public partial class FilesViewModel : ObservableObject, IRefreshable, ISelection
             IsSearching = true;
             var result = await _importExport.ImportAsync(source);
             var errorText = result.Errors.Count > 0
-                ? $"\n\n{result.Errors.Count} row(s) were skipped:"
-                  + string.Join(string.Empty, result.Errors.Take(10).Select(e => $"\n  row {e.Row}: {e.Reason}"))
-                  + (result.Errors.Count > 10 ? $"\n  ... and {result.Errors.Count - 10} more" : string.Empty)
+                ? Loc.Instance.F("Files_ImportSkipped", result.Errors.Count)
+                  + string.Join(string.Empty, result.Errors.Take(10).Select(e => $"\n  {e.Row}: {e.Reason}"))
+                  + (result.Errors.Count > 10 ? Loc.Instance.F("Files_ImportMore", result.Errors.Count - 10) : string.Empty)
                 : string.Empty;
 
             _dialogs.ShowInfo(
-                "Import finished",
-                $"Imported {result.Imported:N0} new file record(s).\n"
-                + $"Updated {result.Updated:N0} existing record(s).\n"
-                + $"Skipped {result.SkippedDuplicates} duplicate row(s)."
-                + errorText);
+                Loc.Instance["Files_ImportDone"],
+                Loc.Instance.F("Files_ImportSummary", result.Imported, result.Updated, result.SkippedDuplicates) + errorText);
             await LoadFilterOptionsAsync();
             await SearchNowAsync();
         }
         catch (FileFlowException ex)
         {
-            _dialogs.ShowError("Import failed", ex.Message);
+            _dialogs.ShowError(Loc.Instance["Files_ImportFailed"], ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Import failed");
-            _dialogs.ShowError("Import failed", "Unexpected error: " + ex.Message);
+            _logger.LogError(ex, "The import failed");
+            _dialogs.ShowError(Loc.Instance["Files_ImportFailed"], Loc.Instance.F("Files_DlgUnexpected", ex.Message));
         }
         finally
         {

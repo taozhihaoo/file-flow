@@ -1,8 +1,32 @@
 <UserControl x:Class="FileFlow.App.Views.FilesView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:behaviors="clr-namespace:FileFlow.App.Behaviors">
-    <Grid Margin="24,18,24,16">
+             xmlns:behaviors="clr-namespace:FileFlow.App.Behaviors"
+             xmlns:loc="clr-namespace:FileFlow.App.Localization">
+    <UserControl.Resources>
+        <Style x:Key="FilterLabel" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,7,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+        </Style>
+        <Style x:Key="MetaLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+            <Setter Property="Margin" Value="0,4,0,4"/>
+        </Style>
+        <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource AppButton}">
+            <Setter Property="Padding" Value="11,6"/>
+        </Style>
+        <Style x:Key="MetaValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Margin" Value="12,4,0,4"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="26,18,26,18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -10,130 +34,159 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- ==================== Scan panel ==================== -->
-        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+        <!-- ==================== Scan ==================== -->
+        <Border Grid.Row="0" Margin="0,0,0,12" Padding="16,14" Style="{StaticResource Card}">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0"
+                            Width="30"
+                            Height="30"
+                            VerticalAlignment="Center"
+                            Background="{StaticResource AccentLight}"
+                            CornerRadius="8">
+                        <TextBlock Style="{StaticResource Glyph}"
+                                   FontSize="14"
+                                   Foreground="{StaticResource Accent}"
+                                   Text="&#xE8B7;"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center">
+                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Text="{loc:T Files_ScanTitle}"/>
+                        <TextBlock Style="{StaticResource Caption}" Text="{loc:T Files_ScanHint}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <CheckBox Content="{loc:T Files_IncludeSubfolders}"
+                                  IsChecked="{Binding ScanRecursive}"
+                                  Style="{StaticResource AppCheckBox}"/>
+                        <CheckBox Margin="18,0,0,0"
+                                  Content="{loc:T Files_IncludeHidden}"
+                                  IsChecked="{Binding ScanIncludeHidden}"
+                                  Style="{StaticResource AppCheckBox}"/>
+                    </StackPanel>
+                </Grid>
 
-                <StackPanel Grid.Row="0" Orientation="Horizontal">
-                    <TextBox x:Name="ScanFolderBox"
-                             Width="380"
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0"
                              Style="{StaticResource AppTextBox}"
-                             Tag="Folder to scan, e.g. D:\\Documents"
+                             Tag="{loc:T Files_FolderPlaceholder}"
                              Text="{Binding ScanFolder, UpdateSourceTrigger=PropertyChanged}"/>
-                    <Button Margin="8,0,0,0"
+                    <Button Grid.Column="1"
+                            Margin="8,0,0,0"
                             Command="{Binding BrowseScanFolderCommand}"
-                            Content="Browse..."
+                            Content="{loc:T Common_Browse}"
                             Style="{StaticResource AppButton}"/>
-                    <CheckBox Margin="16,0,0,0"
-                              Content="Include subfolders"
-                              IsChecked="{Binding ScanRecursive}"
-                              Style="{StaticResource AppCheckBox}"/>
-                    <CheckBox Margin="16,0,0,0"
-                              Content="Include hidden files"
-                              IsChecked="{Binding ScanIncludeHidden}"
-                              Style="{StaticResource AppCheckBox}"/>
-                    <Button Margin="16,0,0,0"
+                    <Button Grid.Column="2"
+                            Margin="8,0,0,0"
                             Command="{Binding ScanCommand}"
-                            Content="Scan"
-                            FontWeight="SemiBold"
+                            Content="{loc:T Files_Scan}"
                             IsEnabled="{Binding ScanRunning, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource AccentButton}"/>
-                    <Button Margin="8,0,0,0"
+                    <Button Grid.Column="3"
+                            Margin="8,0,0,0"
                             Command="{Binding CancelScanCommand}"
-                            Content="Cancel"
+                            Content="{loc:T Files_CancelScan}"
                             IsEnabled="{Binding ScanRunning}"
                             Style="{StaticResource AppButton}"/>
-                </StackPanel>
+                </Grid>
 
-                <Grid Grid.Row="1" Margin="0,10,0,0">
+                <Grid Margin="0,10,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <ProgressBar Grid.Column="0"
-                                 Height="6"
                                  VerticalAlignment="Center"
                                  IsIndeterminate="{Binding ScanRunning, Mode=OneWay}"
                                  Maximum="100"
                                  Style="{StaticResource AppProgressBar}"
                                  Visibility="{Binding ScanRunning, Converter={StaticResource BoolToVisibility}}"/>
                     <TextBlock Grid.Column="1"
-                               MaxWidth="560"
-                               Style="{StaticResource Muted}"
+                               MaxWidth="620"
+                               Margin="12,0,0,0"
+                               VerticalAlignment="Center"
+                               FontSize="11.5"
+                               Foreground="{StaticResource TextSecondary}"
                                Text="{Binding ScanStatusText}"
                                TextTrimming="CharacterEllipsis"/>
                 </Grid>
-            </Grid>
+            </StackPanel>
         </Border>
 
-        <!-- ==================== Search toolbar ==================== -->
-        <Border Grid.Row="1"
-                Margin="0,0,0,12"
-                Padding="12"
-                Background="{StaticResource Surface}"
-                BorderBrush="{StaticResource SurfaceBorder}"
-                BorderThickness="1"
-                CornerRadius="8">
+        <!-- ==================== Filters ==================== -->
+        <Border Grid.Row="1" Margin="0,0,0,12" Padding="14,12" Style="{StaticResource Card}">
             <StackPanel>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" Orientation="Horizontal">
-                        <TextBox x:Name="SearchBox"
-                                 Width="360"
-                                 VerticalAlignment="Center"
-                                 Style="{StaticResource AppTextBox}"
-                                 Tag="Search by name or path, e.g. invoice or .pdf"
-                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
-                        <ComboBox Margin="10,0,0,0"
-                                  Width="130"
-                                  ItemsSource="{Binding Extensions}"
-                                  SelectedItem="{Binding SelectedExtension}"
-                                  Style="{StaticResource AppComboBox}"
-                                  ToolTip="Filter by extension"/>
-                        <ComboBox Margin="10,0,0,0"
-                                  Width="140"
-                                  DisplayMemberPath="Name"
-                                  ItemsSource="{Binding Tags}"
-                                  SelectedItem="{Binding SelectedTagFilter}"
-                                  Style="{StaticResource AppComboBox}"
-                                  ToolTip="Filter by tag">
-                            <ComboBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel/>
-                                </ItemsPanelTemplate>
-                            </ComboBox.ItemsPanel>
-                        </ComboBox>
-                        <CheckBox Margin="14,0,0,0"
-                                  Content="Missing only"
+                    <TextBox Grid.Column="0"
+                             Style="{StaticResource AppSearchBox}"
+                             Tag="{loc:T Files_SearchPlaceholder}"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+                    <ComboBox Grid.Column="1"
+                              Width="150"
+                              Margin="10,0,0,0"
+                              DisplayMemberPath="Display"
+                              ItemsSource="{Binding ExtensionOptions}"
+                              SelectedItem="{Binding SelectedExtensionOption}"
+                              Style="{StaticResource AppComboBox}"
+                              ToolTip="{loc:T Files_ExtFilterTip}"/>
+                    <ComboBox Grid.Column="2"
+                              Width="150"
+                              Margin="10,0,0,0"
+                              DisplayMemberPath="Display"
+                              ItemsSource="{Binding TagOptions}"
+                              SelectedItem="{Binding SelectedTagOption}"
+                              Style="{StaticResource AppComboBox}"
+                              ToolTip="{loc:T Files_TagFilterTip}"/>
+                    <StackPanel Grid.Column="3" Margin="14,0,0,0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <CheckBox Content="{loc:T Files_MissingOnly}"
                                   IsChecked="{Binding OnlyMissing}"
                                   Style="{StaticResource AppCheckBox}"/>
                     </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <Button Command="{Binding ImportCommand}" Content="Import CSV..." Style="{StaticResource AppButton}"/>
-                        <Button Margin="8,0,0,0" Command="{Binding ExportCommand}" Content="Export CSV..." Style="{StaticResource AppButton}"/>
-                        <Button Margin="8,0,0,0" Command="{Binding ClearFiltersCommand}" Content="Clear" Style="{StaticResource AppButton}"/>
-                        <Button Margin="8,0,0,0" Command="{Binding SearchCommand}" Content="Search" Style="{StaticResource AppButton}"/>
-                        <Button Margin="8,0,0,0" Command="{Binding RefreshFilesCommand}" Content="Verify on disk" Style="{StaticResource AppButton}" ToolTip="Re-check the listed files against the disk and update missing flags"/>
-                    </StackPanel>
                 </Grid>
-                <StackPanel Margin="0,10,0,0" Orientation="Horizontal">
-                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Muted}" Text="Size from"/>
-                    <TextBox Width="90" Margin="6,0,0,0" Style="{StaticResource AppTextBox}" Tag="e.g. 10 MB" Text="{Binding SizeMinText, UpdateSourceTrigger=PropertyChanged}"/>
-                    <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="to"/>
-                    <TextBox Width="90" Margin="6,0,0,0" Style="{StaticResource AppTextBox}" Tag="e.g. 500 MB" Text="{Binding SizeMaxText, UpdateSourceTrigger=PropertyChanged}"/>
-                    <TextBlock Margin="16,0,0,0" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="Modified from"/>
-                    <DatePicker Width="140" Margin="6,0,0,0" SelectedDate="{Binding ModifiedFrom}"/>
-                    <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="to"/>
-                    <DatePicker Width="140" Margin="6,0,0,0" SelectedDate="{Binding ModifiedTo}"/>
-                </StackPanel>
+
+                <WrapPanel Margin="0,12,0,0">
+                    <TextBlock Style="{StaticResource FilterLabel}" Text="{loc:T Files_SizeFrom}"/>
+                    <TextBox Width="88"
+                             Style="{StaticResource AppTextBox}"
+                             Tag="{loc:T Files_SizeMinPlaceholder}"
+                             Text="{Binding SizeMinText, UpdateSourceTrigger=PropertyChanged}"/>
+                    <TextBlock Margin="7,0" Style="{StaticResource FilterLabel}" Text="{loc:T Files_SizeTo}"/>
+                    <TextBox Width="88"
+                             Margin="0,0,6,0"
+                             Style="{StaticResource AppTextBox}"
+                             Tag="{loc:T Files_SizeMaxPlaceholder}"
+                             Text="{Binding SizeMaxText, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <TextBlock Margin="14,0,7,0" Style="{StaticResource FilterLabel}" Text="{loc:T Files_ModifiedFrom}"/>
+                    <DatePicker Width="124" VerticalAlignment="Center" SelectedDate="{Binding ModifiedFrom}"/>
+                    <TextBlock Margin="7,0" Style="{StaticResource FilterLabel}" Text="{loc:T Files_ModifiedTo}"/>
+                    <DatePicker Width="124" Margin="0,0,10,0" VerticalAlignment="Center" SelectedDate="{Binding ModifiedTo}"/>
+
+                    <Button Command="{Binding ClearFiltersCommand}" Content="{loc:T Files_ClearFilters}" Style="{StaticResource GhostButton}"/>
+                    <Button Margin="5,0,0,0"
+                            Command="{Binding RefreshFilesCommand}"
+                            Content="{loc:T Files_Verify}"
+                            Style="{StaticResource AppButton}"
+                            ToolTip="{loc:T Files_VerifyTip}"/>
+                    <Button Margin="5,0,0,0" Command="{Binding ImportCommand}" Content="{loc:T Files_Import}" Style="{StaticResource AppButton}"/>
+                    <Button Margin="5,0,0,0" Command="{Binding ExportCommand}" Content="{loc:T Files_Export}" Style="{StaticResource AppButton}"/>
+                    <Button Margin="5,0,0,0" Command="{Binding SearchCommand}" Content="{loc:T Common_Search}" Style="{StaticResource AccentButton}"/>
+                </WrapPanel>
             </StackPanel>
         </Border>
 
@@ -141,30 +194,31 @@
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="290"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="306"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0"
                     Background="{StaticResource Surface}"
                     BorderBrush="{StaticResource SurfaceBorder}"
                     BorderThickness="1"
-                    CornerRadius="8"
+                    CornerRadius="12"
                     ClipToBounds="True">
                 <Grid>
                     <DataGrid x:Name="FilesGrid"
+                              behaviors:DataGridSelectionBehavior.BindSelection="{Binding SelectedRows}"
                               ItemsSource="{Binding Results}"
                               SelectedItem="{Binding SelectedFile}"
-                              behaviors:DataGridSelectionBehavior.BindSelection="{Binding SelectedRows}"
                               Style="{StaticResource AppDataGrid}"
                               Visibility="{Binding Results.Count, Converter={StaticResource ZeroToVisibility}, ConverterParameter=invert}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Binding="{Binding NameText}" Header="Name" MinWidth="180" Width="*">
+                            <DataGridTextColumn Binding="{Binding NameText}" Header="{loc:T Files_ColName}" MinWidth="200" Width="*">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Margin" Value="12,0"/>
                                         <Setter Property="VerticalAlignment" Value="Center"/>
                                         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                        <Setter Property="ToolTip" Value="{Binding PathText}"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsMissing}" Value="True">
                                                 <Setter Property="Foreground" Value="{StaticResource TextDisabled}"/>
@@ -173,29 +227,42 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Binding="{Binding ExtensionText}" Header="Ext" Width="70"/>
-                            <DataGridTextColumn Binding="{Binding SizeText}" Header="Size" Width="90"/>
-                            <DataGridTextColumn Binding="{Binding ModifiedText}" Header="Modified" Width="130"/>
-                            <DataGridTextColumn Binding="{Binding Tags}" Header="Tags" Width="150">
+                            <DataGridTextColumn Binding="{Binding ExtensionText}" Header="{loc:T Files_ColExt}" Width="80">
                                 <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Margin" Value="10,0"/>
-                                        <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource GridCellPadding}">
+                                        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Binding="{Binding SizeText}" Header="{loc:T Files_ColSize}" Width="96">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource GridCellPadding}"/>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Binding="{Binding ModifiedText}" Header="{loc:T Files_ColModified}" Width="140">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource GridCellPadding}">
+                                        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Binding="{Binding Tags}" Header="{loc:T Files_ColTags}" Width="160">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource GridCellPadding}">
                                         <Setter Property="Foreground" Value="{StaticResource Accent}"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTemplateColumn Header="" Width="52">
+                            <DataGridTemplateColumn Header="" Width="48">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Margin="0,0,8,0"
+                                        <TextBlock HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
                                                    FontFamily="{StaticResource IconFontFamily}"
+                                                   FontSize="13"
                                                    Foreground="{StaticResource Warning}"
                                                    Text="&#xE7BA;"
-                                                   ToolTip="File is missing on disk"
-                                                   VerticalAlignment="Center"
-                                                   HorizontalAlignment="Center"
+                                                   ToolTip="{loc:T Files_MissingTip}"
                                                    Visibility="{Binding IsMissing, Converter={StaticResource BoolToVisibility}}"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -203,8 +270,12 @@
                         </DataGrid.Columns>
                         <DataGrid.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Command="{Binding OpenFileCommand}" CommandParameter="{Binding SelectedFile}" Header="_Open"/>
-                                <MenuItem Command="{Binding OpenContainingFolderCommand}" CommandParameter="{Binding SelectedFile}" Header="Open _containing folder"/>
+                                <MenuItem Command="{Binding OpenFileCommand}"
+                                          CommandParameter="{Binding SelectedFile}"
+                                          Header="{loc:T Files_CtxOpen}"/>
+                                <MenuItem Command="{Binding OpenContainingFolderCommand}"
+                                          CommandParameter="{Binding SelectedFile}"
+                                          Header="{loc:T Files_CtxOpenFolder}"/>
                             </ContextMenu>
                         </DataGrid.ContextMenu>
                     </DataGrid>
@@ -213,117 +284,182 @@
                     <StackPanel HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Visibility="{Binding Results.Count, Converter={StaticResource ZeroToVisibility}}">
-                        <TextBlock HorizontalAlignment="Center"
-                                   FontFamily="{StaticResource IconFontFamily}"
-                                   FontSize="40"
-                                   Foreground="{StaticResource TextDisabled}"
-                                   Text="&#xE721;"/>
-                        <TextBlock Margin="0,12,0,0" HorizontalAlignment="Center" Style="{StaticResource H2}" Text="No files found"/>
-                        <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding ScanStatusText}"/>
+                        <Border Width="52"
+                                Height="52"
+                                HorizontalAlignment="Center"
+                                Background="{StaticResource SurfaceMuted}"
+                                CornerRadius="14">
+                            <TextBlock Style="{StaticResource Glyph}"
+                                       FontSize="22"
+                                       Foreground="{StaticResource TextMuted}"
+                                       Text="&#xE721;"/>
+                        </Border>
+                        <TextBlock Margin="0,14,0,0" HorizontalAlignment="Center" Style="{StaticResource H2}" Text="{loc:T Files_NoResults}"/>
+                        <TextBlock Margin="0,5,0,0"
+                                   MaxWidth="320"
+                                   HorizontalAlignment="Center"
+                                   Style="{StaticResource Muted}"
+                                   Text="{loc:T Files_NoResultsHint}"
+                                   TextAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- Details panel -->
+            <!-- Details -->
             <Border Grid.Column="2"
-                    Padding="14"
+                    Padding="16"
                     Background="{StaticResource Surface}"
                     BorderBrush="{StaticResource SurfaceBorder}"
                     BorderThickness="1"
-                    CornerRadius="8">
+                    CornerRadius="12">
                 <Grid>
-                    <TextBlock HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               Style="{StaticResource Muted}"
-                               Text="Select a file to see details."
-                               Visibility="{Binding SelectedFile, Converter={StaticResource NullToVisibility}, ConverterParameter=invert}"/>
-                    <StackPanel Visibility="{Binding SelectedFile, Converter={StaticResource NullToVisibility}}">
-                        <TextBlock FontSize="15"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextPrimary}"
-                                   Text="{Binding SelectedFile.NameText}"
-                                   TextWrapping="Wrap"/>
-                        <TextBlock Margin="0,6,0,0"
-                                   FontSize="11"
-                                   Foreground="{StaticResource TextSecondary}"
-                                   Text="{Binding SelectedFile.PathText}"
-                                   TextWrapping="Wrap"/>
-                        <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
-                            <Border Background="{StaticResource StatusRunningBackground}" Style="{StaticResource StatusPill}"
-                                    Visibility="{Binding SelectedFile.IsMissing, Converter={StaticResource BoolToVisibility}}">
-                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource StatusRunningText}" Text="MISSING"/>
-                            </Border>
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Visibility="{Binding SelectedFile, Converter={StaticResource NullToVisibility}, ConverterParameter=invert}">
+                        <TextBlock Style="{StaticResource Glyph}"
+                                   FontSize="20"
+                                   Foreground="{StaticResource TextDisabled}"
+                                   Text="&#xE8A5;"/>
+                        <TextBlock Margin="0,10,0,0"
+                                   Style="{StaticResource Muted}"
+                                   Text="{loc:T Files_DetailsHint}"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+
+                    <Grid Visibility="{Binding SelectedFile, Converter={StaticResource NullToVisibility}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0"
+                                        Width="34"
+                                        Height="34"
+                                        VerticalAlignment="Top"
+                                        Background="{StaticResource AccentLight}"
+                                        CornerRadius="9">
+                                    <TextBlock Style="{StaticResource Glyph}"
+                                               FontSize="15"
+                                               Foreground="{StaticResource Accent}"
+                                               Text="&#xE8A5;"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                    <TextBlock FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextPrimary}"
+                                               Text="{Binding SelectedFile.NameText}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding SelectedFile.NameText}"/>
+                                    <Border Margin="0,5,0,0"
+                                            HorizontalAlignment="Left"
+                                            Background="{StaticResource WarningSoft}"
+                                            Style="{StaticResource StatusPill}"
+                                            Visibility="{Binding SelectedFile.IsMissing, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock FontSize="10"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource Warning}"
+                                                   Text="{loc:T Files_MissingBadge}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Margin="0,10,0,0"
+                                       FontSize="10.5"
+                                       Foreground="{StaticResource TextMuted}"
+                                       Text="{Binding SelectedFile.PathText}"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
-                        <Grid Margin="0,14,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.Resources>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FontSize" Value="12"/>
-                                    <Setter Property="Margin" Value="0,3"/>
-                                </Style>
-                            </Grid.Resources>
-                            <TextBlock Grid.Row="0" Grid.Column="0" Foreground="{StaticResource TextSecondary}" Text="Size"/>
-                            <TextBlock Grid.Row="0" Grid.Column="1" Margin="14,3,0,3" Foreground="{StaticResource TextPrimary}" Text="{Binding SelectedFile.SizeText}"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Foreground="{StaticResource TextSecondary}" Text="Modified"/>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Margin="14,3,0,3" Foreground="{StaticResource TextPrimary}" Text="{Binding SelectedFile.ModifiedText}"/>
-                            <TextBlock Grid.Row="2" Grid.Column="0" Foreground="{StaticResource TextSecondary}" Text="Created"/>
-                            <TextBlock Grid.Row="2" Grid.Column="1" Margin="14,3,0,3" Foreground="{StaticResource TextPrimary}" Text="{Binding SelectedFile.File.CreatedAtUtc, Converter={StaticResource UtcToLocal}}"/>
-                            <TextBlock Grid.Row="3" Grid.Column="0" Foreground="{StaticResource TextSecondary}" Text="Scanned"/>
-                            <TextBlock Grid.Row="3" Grid.Column="1" Margin="14,3,0,3" Foreground="{StaticResource TextPrimary}" Text="{Binding SelectedFile.ScannedText}"/>
-                            <TextBlock Grid.Row="4" Grid.Column="0" Foreground="{StaticResource TextSecondary}" Text="Tags"/>
-                            <TextBlock Grid.Row="4" Grid.Column="1" Margin="14,3,0,3" Foreground="{StaticResource Accent}" Text="{Binding SelectedFile.Tags}" TextWrapping="Wrap"/>
-                        </Grid>
-                        <StackPanel Margin="0,16,0,0">
-                            <Button Command="{Binding OpenFileCommand}" CommandParameter="{Binding SelectedFile}" Content="Open file" HorizontalAlignment="Stretch" Style="{StaticResource AppButton}"/>
+
+                        <StackPanel Grid.Row="1" Margin="0,14,0,0">
+                            <Border Style="{StaticResource Divider}"/>
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource MetaLabel}" Text="{loc:T Files_LabelSize}"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource MetaValue}" Text="{Binding SelectedFile.SizeText}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MetaLabel}" Text="{loc:T Files_LabelModified}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource MetaValue}" Text="{Binding SelectedFile.ModifiedText}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource MetaLabel}" Text="{loc:T Files_LabelCreated}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource MetaValue}" Text="{Binding SelectedFile.File.CreatedAtUtc, Converter={StaticResource UtcToLocal}}"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource MetaLabel}" Text="{loc:T Files_LabelScanned}"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource MetaValue}" Text="{Binding SelectedFile.ScannedText}"/>
+                                <TextBlock Grid.Row="4" Grid.Column="0" Style="{StaticResource MetaLabel}" Text="{loc:T Files_LabelTags}"/>
+                                <TextBlock Grid.Row="4"
+                                           Grid.Column="1"
+                                           Foreground="{StaticResource Accent}"
+                                           Style="{StaticResource MetaValue}"
+                                           Text="{Binding SelectedFile.Tags}"
+                                           TextWrapping="Wrap"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2" Margin="0,14,0,0">
+                            <Button Command="{Binding OpenFileCommand}"
+                                    CommandParameter="{Binding SelectedFile}"
+                                    Content="{loc:T Files_OpenFile}"
+                                    HorizontalAlignment="Stretch"
+                                    Style="{StaticResource AccentButton}"/>
                             <Button Margin="0,8,0,0"
                                     Command="{Binding OpenContainingFolderCommand}"
                                     CommandParameter="{Binding SelectedFile}"
-                                    Content="Show in Explorer"
+                                    Content="{loc:T Files_ShowInExplorer}"
                                     HorizontalAlignment="Stretch"
                                     Style="{StaticResource AppButton}"/>
                         </StackPanel>
-                    </StackPanel>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>
 
         <!-- ==================== Action bar ==================== -->
-        <Border Grid.Row="3"
-                Margin="0,12,0,0"
-                Padding="12,10"
-                Background="{StaticResource Surface}"
-                BorderBrush="{StaticResource SurfaceBorder}"
-                BorderThickness="1"
-                CornerRadius="8">
+        <Border Grid.Row="3" Margin="0,12,0,0" Padding="14,11" Style="{StaticResource Card}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0"
-                           VerticalAlignment="Center"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimary}"
-                           Text="{Binding SelectedCount, StringFormat=Selected: {0:N0} file(s)}"/>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="26"
+                            Height="26"
+                            VerticalAlignment="Center"
+                            Background="{StaticResource AccentLight}"
+                            CornerRadius="7">
+                        <TextBlock Style="{StaticResource Glyph}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource Accent}"
+                                   Text="&#xE73E;"/>
+                    </Border>
+                    <TextBlock Margin="9,0,0,0"
+                               VerticalAlignment="Center"
+                               FontSize="12.5"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimary}"
+                               Text="{Binding SelectionText}"/>
+                </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Command="{Binding RenameCommand}" Content="Rename..." IsEnabled="{Binding HasSelection}" Style="{StaticResource AppButton}"/>
-                    <Button Margin="8,0,0,0" Command="{Binding ChangeExtensionCommand}" Content="Change ext..." IsEnabled="{Binding HasSelection}" Style="{StaticResource AppButton}"/>
-                    <Button Margin="8,0,0,0" Command="{Binding MoveCommand}" Content="Move..." IsEnabled="{Binding HasSelection}" Style="{StaticResource AppButton}"/>
-                    <Button Margin="8,0,0,0" Command="{Binding CopyCommand}" Content="Copy..." IsEnabled="{Binding HasSelection}" Style="{StaticResource AppButton}"/>
-                    <Button Margin="8,0,0,0" Command="{Binding AddTagCommand}" Content="Add tag..." IsEnabled="{Binding HasSelection}" Style="{StaticResource AppButton}"/>
-                    <Button Margin="8,0,0,0" Command="{Binding RemoveTagCommand}" Content="Remove tag..." IsEnabled="{Binding HasSelection}" Style="{StaticResource AppButton}"/>
-                    <Button Margin="8,0,0,0" Command="{Binding DeleteCommand}" Content="Delete..." IsEnabled="{Binding HasSelection}" Style="{StaticResource DangerButton}"/>
+                    <Button Command="{Binding RenameCommand}" Content="{loc:T Files_Rename}" IsEnabled="{Binding HasSelection}" Style="{StaticResource ActionButton}"/>
+                    <Button Margin="6,0,0,0" Command="{Binding ChangeExtensionCommand}" Content="{loc:T Files_ChangeExt}" IsEnabled="{Binding HasSelection}" Style="{StaticResource ActionButton}"/>
+                    <Button Margin="6,0,0,0" Command="{Binding MoveCommand}" Content="{loc:T Files_Move}" IsEnabled="{Binding HasSelection}" Style="{StaticResource ActionButton}"/>
+                    <Button Margin="6,0,0,0" Command="{Binding CopyCommand}" Content="{loc:T Files_Copy}" IsEnabled="{Binding HasSelection}" Style="{StaticResource ActionButton}"/>
+                    <Button Margin="6,0,0,0" Command="{Binding AddTagCommand}" Content="{loc:T Files_AddTag}" IsEnabled="{Binding HasSelection}" Style="{StaticResource ActionButton}"/>
+                    <Button Margin="6,0,0,0" Command="{Binding RemoveTagCommand}" Content="{loc:T Files_RemoveTag}" IsEnabled="{Binding HasSelection}" Style="{StaticResource ActionButton}"/>
+                    <Button Margin="6,0,0,0" Command="{Binding DeleteCommand}" Content="{loc:T Files_Delete}" IsEnabled="{Binding HasSelection}" Style="{StaticResource DangerButton}"/>
                 </StackPanel>
             </Grid>
         </Border>

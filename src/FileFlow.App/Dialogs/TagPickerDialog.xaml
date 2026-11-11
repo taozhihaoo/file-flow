@@ -1,16 +1,20 @@
 <Window x:Class="FileFlow.App.Dialogs.TagPickerDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:FileFlow.App.Localization"
         Title="{Binding Title}"
-        Width="380"
-        Height="420"
-        MinHeight="360"
+        Width="400"
+        Height="440"
+        MinHeight="380"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         ShowInTaskbar="False"
-        Background="{StaticResource WindowBackground}"
+        Background="{StaticResource Surface}"
+        FontFamily="{StaticResource AppFontFamily}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True"
         WindowStyle="ToolWindow">
-    <Grid Margin="16">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -18,40 +22,89 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+
         <TextBlock Grid.Row="0"
                    Margin="0,0,0,10"
-                   Style="{StaticResource Muted}"
-                   Text="{Binding Label}"/>
-        <ListBox Grid.Row="1"
-                 ItemsSource="{Binding Tags}"
-                 SelectedItem="{Binding SelectedTag}"
-                 BorderBrush="{StaticResource SurfaceBorder}"
-                 BorderThickness="1"
-                 Background="{StaticResource Surface}">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Margin="4" Text="{Binding Name}"/>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+                   FontSize="12"
+                   Foreground="{StaticResource TextSecondary}"
+                   Text="{Binding Label}"
+                   TextWrapping="Wrap"/>
+
+        <Border Grid.Row="1"
+                Background="{StaticResource SurfaceAlt}"
+                BorderBrush="{StaticResource SurfaceBorder}"
+                BorderThickness="1"
+                CornerRadius="9">
+            <ListBox Background="Transparent"
+                     BorderThickness="0"
+                     ItemsSource="{Binding Tags}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     SelectedItem="{Binding SelectedTag}">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="row"
+                                            Margin="4,1"
+                                            Padding="9,7"
+                                            Background="Transparent"
+                                            CornerRadius="7">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="row" Property="Background" Value="{StaticResource HoverBackground}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="row" Property="Background" Value="{StaticResource AccentLight}"/>
+                                            <Setter Property="Foreground" Value="{StaticResource AccentPressed}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center"
+                                       FontFamily="{StaticResource IconFontFamily}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource Accent}"
+                                       Text="&#xE8EC;"/>
+                            <TextBlock Margin="8,0,0,0" FontSize="12.5" Text="{Binding Name}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
         <CheckBox Grid.Row="2"
-                  Margin="0,10,0,0"
+                  Margin="0,14,0,0"
+                  Content="{loc:T Tags_CreateNew}"
                   IsChecked="{Binding CreateNew}"
-                  Style="{StaticResource AppCheckBox}"
-                  Content="Create a new tag"/>
+                  Style="{StaticResource AppCheckBox}"/>
+
         <TextBox x:Name="NewTagBox"
                  Grid.Row="3"
-                 Margin="0,8,0,0"
-                 Style="{StaticResource AppTextBox}"
-                 Tag="New tag name"
+                 Margin="0,9,0,0"
                  IsEnabled="{Binding CreateNew}"
+                 Style="{StaticResource AppTextBox}"
+                 Tag="{loc:T Tags_NewNamePlaceholder}"
                  Text="{Binding NewTagName, UpdateSourceTrigger=PropertyChanged}"/>
-        <StackPanel Grid.Row="4"
-                    HorizontalAlignment="Right"
-                    Orientation="Horizontal"
-                    Margin="0,16,0,0">
-            <Button Content="Cancel" IsCancel="True" MinWidth="90" Style="{StaticResource AppButton}"/>
-            <Button Command="{Binding ConfirmCommand}" Content="{Binding ConfirmText}" IsDefault="True" MinWidth="90" Margin="10,0,0,0" Style="{StaticResource AccentButton}"/>
+
+        <StackPanel Grid.Row="4" Margin="0,16,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button MinWidth="92" Content="{loc:T Common_Cancel}" IsCancel="True" Style="{StaticResource AppButton}"/>
+            <Button MinWidth="92"
+                    Margin="10,0,0,0"
+                    Command="{Binding ConfirmCommand}"
+                    Content="{Binding ConfirmText}"
+                    IsDefault="True"
+                    Style="{StaticResource AccentButton}"/>
         </StackPanel>
     </Grid>
 </Window>

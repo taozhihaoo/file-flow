@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FileFlow.App.Localization;
 using FileFlow.Core.Interfaces;
 using FileFlow.Core.Models;
 using FileFlow.Core.Planning;
@@ -13,21 +14,8 @@ public partial class HistoryViewModel : ObservableObject, IRefreshable
 {
     private const int PageSize = 200;
 
-    private readonly IHistoryRepository _history;
-    private readonly ILogger<HistoryViewModel> _logger;
-    private int _offset;
-
-    public HistoryViewModel(IHistoryRepository history, ILogger<HistoryViewModel> logger)
-    {
-        _history = history;
-        _logger = logger;
-    }
-
-    public ObservableCollection<OperationRowViewModel> Operations { get; } = new();
-
-    public ObservableCollection<string> TypeFilters { get; } = new()
-    {
-        "(all)",
+    private static readonly string[] OperationTypes =
+    [
         TaskTypeNames.Scan,
         TaskTypeNames.Rename,
         TaskTypeNames.Move,
@@ -38,10 +26,26 @@ public partial class HistoryViewModel : ObservableObject, IRefreshable
         TaskTypeNames.RemoveTag,
         TaskTypeNames.Import,
         TaskTypeNames.Export,
-    };
+    ];
+
+    private readonly IHistoryRepository _history;
+    private readonly ILogger<HistoryViewModel> _logger;
+    private int _offset;
+    private bool _suppressReload;
+
+    public HistoryViewModel(IHistoryRepository history, ILogger<HistoryViewModel> logger)
+    {
+        _history = history;
+        _logger = logger;
+        BuildTypeFilters();
+    }
+
+    public ObservableCollection<OperationRowViewModel> Operations { get; } = new();
+
+    public ObservableCollection<FilterOption> TypeFilters { get; } = new();
 
     [ObservableProperty]
-    private string selectedTypeFilter = "(all)";
+    private FilterOption? selectedTypeFilter;
 
     [ObservableProperty]
     private int totalCount;
@@ -49,14 +53,37 @@ public partial class HistoryViewModel : ObservableObject, IRefreshable
     [ObservableProperty]
     private bool canLoadMore;
 
-    partial void OnSelectedTypeFilterChanged(string value)
+    /// <summary>Rebuilds the filter labels (they are localized) keeping the current selection.</summary>
+    private void BuildTypeFilters()
     {
+        var previous = SelectedTypeFilter?.Value ?? string.Empty;
+        _suppressReload = true;
+
+        TypeFilters.Clear();
+        TypeFilters.Add(new FilterOption(string.Empty, Loc.Instance["History_FilterAll"]));
+        foreach (var operationType in OperationTypes)
+        {
+            TypeFilters.Add(new FilterOption(operationType, DisplayNames.Operation(operationType)));
+        }
+
+        SelectedTypeFilter = TypeFilters.FirstOrDefault(o => o.Value == previous) ?? TypeFilters[0];
+        _suppressReload = false;
+    }
+
+    partial void OnSelectedTypeFilterChanged(FilterOption? value)
+    {
+        if (_suppressReload)
+        {
+            return;
+        }
+
         _offset = 0;
         _ = LoadAsync(reset: true);
     }
 
     public async Task RefreshAsync()
     {
+        BuildTypeFilters();
         _offset = 0;
         await LoadAsync(reset: true);
     }
@@ -70,7 +97,7 @@ public partial class HistoryViewModel : ObservableObject, IRefreshable
                 Operations.Clear();
             }
 
-            var typeFilter = SelectedTypeFilter == "(all)" ? null : SelectedTypeFilter;
+            var typeFilter = string.IsNullOrEmpty(SelectedTypeFilter?.Value) ? null : SelectedTypeFilter.Value;
             IReadOnlyList<OperationRecord> records;
             if (typeFilter is not null)
             {

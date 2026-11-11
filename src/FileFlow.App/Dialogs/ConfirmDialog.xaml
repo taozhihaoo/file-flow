@@ -1,47 +1,69 @@
 <Window x:Class="FileFlow.App.Dialogs.ConfirmDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:FileFlow.App.Localization"
         Title="{Binding Title}"
-        Width="440"
+        Width="464"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
-        Background="{StaticResource WindowBackground}"
+        Background="{StaticResource Surface}"
+        FontFamily="{StaticResource AppFontFamily}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True"
         WindowStyle="ToolWindow">
-    <Border Padding="20" Background="{StaticResource Surface}">
-        <StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <TextBlock FontFamily="{StaticResource IconFontFamily}"
-                           FontSize="20"
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0"
+                    Width="38"
+                    Height="38"
+                    VerticalAlignment="Top"
+                    Background="{StaticResource WarningSoft}"
+                    CornerRadius="10">
+                <TextBlock Style="{StaticResource Glyph}"
+                           FontSize="17"
                            Foreground="{StaticResource Warning}"
-                           Text="&#xE7BA;"
-                           VerticalAlignment="Center"/>
-                <TextBlock Margin="10,0,0,0"
-                           FontSize="15"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimary}"
-                           Text="{Binding Message}"
-                           TextWrapping="Wrap"
-                           MaxWidth="360"/>
-            </StackPanel>
-            <TextBlock Foreground="{StaticResource TextSecondary}"
-                       Text="{Binding Details}"
-                       TextWrapping="Wrap"
-                       Visibility="{Binding Details, Converter={StaticResource NullToVisibility}}"
-                       Margin="0,0,0,10"/>
-            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,10,0,0">
-                <Button Content="Cancel"
-                        IsCancel="True"
-                        MinWidth="90"
-                        Style="{StaticResource AppButton}"/>
-                <Button Command="{Binding ConfirmCommand}"
-                        Content="{Binding ConfirmText}"
-                        IsDefault="True"
-                        MinWidth="90"
-                        Margin="10,0,0,0"
-                        Style="{StaticResource AccentButton}"/>
-            </StackPanel>
+                           Text="&#xE7BA;"/>
+            </Border>
+            <TextBlock Grid.Column="1"
+                       Margin="13,0,0,0"
+                       VerticalAlignment="Center"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource TextPrimary}"
+                       Text="{Binding Message}"
+                       TextWrapping="Wrap"/>
+        </Grid>
+
+        <TextBlock Grid.Row="1"
+                   Margin="51,10,0,0"
+                   FontSize="12"
+                   Foreground="{StaticResource TextSecondary}"
+                   Text="{Binding Details}"
+                   TextWrapping="Wrap"
+                   Visibility="{Binding Details, Converter={StaticResource NullToVisibility}}"/>
+
+        <Border Grid.Row="2" Margin="0,20,0,0" Style="{StaticResource Divider}"/>
+        <StackPanel Grid.Row="3" Margin="0,16,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button MinWidth="92" Content="{loc:T Common_Cancel}" IsCancel="True" Style="{StaticResource AppButton}"/>
+            <Button MinWidth="92"
+                    Margin="10,0,0,0"
+                    Command="{Binding ConfirmCommand}"
+                    Content="{Binding ConfirmText}"
+                    IsDefault="True"
+                    Style="{StaticResource AccentButton}"/>
         </StackPanel>
-    </Border>
+    </Grid>
 </Window>

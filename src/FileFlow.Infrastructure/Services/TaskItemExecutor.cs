@@ -23,6 +23,9 @@ internal sealed class TaskItemExecutor
     private readonly TaskMetadata _metadata;
     private readonly Action<FileTask> _progressChanged;
 
+    /// <summary>Serializes the counter update + its database write so concurrent items cannot overwrite each other.</summary>
+    private readonly SemaphoreSlim _counterGate = new(1, 1);
+
     public TaskItemExecutor(
         ITaskRepository tasks,
         IFileRepository files,
@@ -84,7 +87,7 @@ internal sealed class TaskItemExecutor
         }
 
         await PersistItemAsync(item);
-        PersistCounters(item);
+        await PersistCountersAsync(item);
         _progressChanged(_task);
     }
 
@@ -254,9 +257,10 @@ internal sealed class TaskItemExecutor
         }
     }
 
-    private void PersistCounters(TaskItemRecord item)
+    private async Task PersistCountersAsync(TaskItemRecord item)
     {
-        lock (_task)
+        await _counterGate.WaitAsync();
+        try
         {
             _task.Processed++;
             switch (item.State)
@@ -270,14 +274,15 @@ internal sealed class TaskItemExecutor
                     break;
             }
 
-            try
-            {
-                _tasks.UpdateAsync(_task).GetAwaiter().GetResult();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Could not persist progress of task {TaskId}", _task.Id);
-            }
+            await _tasks.UpdateAsync(_task);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not persist the progress of task {TaskId}", _task.Id);
+        }
+        finally
+        {
+            _counterGate.Release();
         }
     }
 }
