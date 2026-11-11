@@ -130,8 +130,12 @@ public class TaskQueueServiceTests : IDisposable
             [new TaskItemRecord { SourcePath = _temp.FilePath("a.txt"), TargetPath = _temp.FilePath("z.txt") }]);
 
         await WaitForAsync(async () => (await _tasks.GetByIdAsync(taskId)) is { State: TaskState.Completed });
-        var task = (await _tasks.GetByIdAsync(taskId))!;
 
+        // The terminal state is written last, but poll for the audit record too so the
+        // assertion never runs against a half-finalized task.
+        await WaitForAsync(async () => (await _history.GetByTypeAsync("Rename", 1)).Count > 0);
+
+        var task = (await _tasks.GetByIdAsync(taskId))!;
         Assert.Contains("z.txt", task.Metadata);
         Assert.Contains("a.txt", task.Metadata);
         var history = (await _history.GetByTypeAsync("Rename", 1))[0];
@@ -459,7 +463,15 @@ public class TaskQueueServiceTests : IDisposable
             "Events",
             [new TaskItemRecord { SourcePath = _temp.FilePath("a.txt"), TargetPath = _temp.FilePath("b.txt") }]);
 
-        await WaitForAsync(async () => (await _tasks.GetByIdAsync(taskId)) is { State: TaskState.Completed });
+        // The terminal state is persisted before the final event is raised, so polling the
+        // database can win the race. Wait for the event itself, which is what this test is about.
+        await WaitForAsync(() =>
+        {
+            lock (states)
+            {
+                return Task.FromResult(states.Contains(TaskState.Completed));
+            }
+        });
 
         lock (states)
         {

@@ -48,10 +48,18 @@ jobs:
       - name: Build (Release, warnings are errors)
         run: dotnet build --no-restore -c Release
 
-      - name: Test (with coverage)
+      - name: Test (Core)
         run: >
-          dotnet test --no-build -c Release
-          --logger "trx;LogFileName=results.trx"
+          dotnet test tests/FileFlow.Core.Tests --no-build -c Release
+          --logger "trx;LogFileName=core.trx"
+          --logger "console;verbosity=normal"
+          --results-directory artifacts/test-results
+          --collect:"XPlat Code Coverage"
+
+      - name: Test (Infrastructure)
+        run: >
+          dotnet test tests/FileFlow.Infrastructure.Tests --no-build -c Release
+          --logger "trx;LogFileName=infrastructure.trx"
           --logger "console;verbosity=normal"
           --results-directory artifacts/test-results
           --collect:"XPlat Code Coverage"

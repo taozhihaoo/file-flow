@@ -395,7 +395,9 @@ public sealed class TaskQueueService : ITaskQueueService, IDisposable
         task.CompletedAtUtc = DateTime.UtcNow;
         task.ErrorCount = task.Failed;
 
-        await _tasks.UpdateAsync(task, shutdown);
+        // The audit record is written first: a task that reads as terminal must already
+        // be in the operation history, for readers that poll the database instead of
+        // listening to TaskChanged (tests, dashboards, external tooling).
         await _history.AddAsync(
             new OperationRecord
             {
@@ -409,6 +411,7 @@ public sealed class TaskQueueService : ITaskQueueService, IDisposable
                 CreatedAtUtc = DateTime.UtcNow,
             },
             shutdown);
+        await _tasks.UpdateAsync(task, shutdown);
 
         _logger.LogInformation(
             "Task {TaskId} finished: {State} ({Succeeded}/{Total} succeeded, {Failed} failed)",
@@ -430,7 +433,6 @@ public sealed class TaskQueueService : ITaskQueueService, IDisposable
                 task.State = TaskState.Failed;
                 task.CompletedAtUtc = DateTime.UtcNow;
                 task.ErrorCount = task.Failed;
-                await _tasks.UpdateAsync(task);
                 await _history.AddAsync(new OperationRecord
                 {
                     TaskId = task.Id,
@@ -441,6 +443,7 @@ public sealed class TaskQueueService : ITaskQueueService, IDisposable
                     FailureCount = task.Total - task.Succeeded,
                     CreatedAtUtc = DateTime.UtcNow,
                 });
+                await _tasks.UpdateAsync(task);
                 RaiseChanged(task.Id, TaskState.Failed);
             }
         }
