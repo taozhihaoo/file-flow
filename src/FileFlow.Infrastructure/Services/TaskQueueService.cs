@@ -397,20 +397,29 @@ public sealed class TaskQueueService : ITaskQueueService, IDisposable
 
         // The audit record is written first: a task that reads as terminal must already
         // be in the operation history, for readers that poll the database instead of
-        // listening to TaskChanged (tests, dashboards, external tooling).
-        await _history.AddAsync(
-            new OperationRecord
-            {
-                TaskId = task.Id,
-                OperationType = TaskTypeNames.FromTaskType(task.Type),
-                Description = task.Description,
-                ItemCount = task.Total,
-                SuccessCount = task.Succeeded,
-                FailureCount = task.Failed,
-                Metadata = task.Metadata,
-                CreatedAtUtc = DateTime.UtcNow,
-            },
-            shutdown);
+        // listening to TaskChanged (tests, dashboards, external tooling). It stays
+        // best-effort so a history failure cannot change the real outcome of a task.
+        try
+        {
+            await _history.AddAsync(
+                new OperationRecord
+                {
+                    TaskId = task.Id,
+                    OperationType = TaskTypeNames.FromTaskType(task.Type),
+                    Description = task.Description,
+                    ItemCount = task.Total,
+                    SuccessCount = task.Succeeded,
+                    FailureCount = task.Failed,
+                    Metadata = task.Metadata,
+                    CreatedAtUtc = DateTime.UtcNow,
+                },
+                shutdown);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Could not write the history entry of task {TaskId}", task.Id);
+        }
+
         await _tasks.UpdateAsync(task, shutdown);
 
         _logger.LogInformation(
